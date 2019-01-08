@@ -114,6 +114,7 @@ abstract class BaseRequest {
 			list($php,$session_id,$request_id) = explode(static::$app_req_sep,$request);
 			/* Validate this request */
 			$spath = array(
+			    $app->current_namespace,
 				AppSession::ConvertToSessionCase(AppConfig::app_session_key(),static::$session_keys_case),
 				AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$session_keys_case),
 			);
@@ -159,7 +160,8 @@ abstract class BaseRequest {
 			echo $content;
 		} else {
 			$app::Log2File(['type'=>'error','message'=>$errors,'no'=>-1,'file'=>__FILE__,'line'=>__LINE__],$app->app_path.AppConfig::logs_path().'/'.AppConfig::errors_log_file());
-			$app->RedirectOnError();
+			// vprint($errors);
+			echo static::$app_act_sep.'window.location.href = "'.$app->GetAppWebLink().'";';
 		}//if(!$errors)
 	}//END public static function PrepareAndExecuteRequest
     /**
