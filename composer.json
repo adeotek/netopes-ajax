@@ -23,7 +23,7 @@
     "require": {
         "php": ">=7.2",
         "ext-json": "*",
-        "netopes/core": "2.4.*"
+        "netopes/core": "2.5.*"
     },
     "autoload": {
         "psr-4": {
