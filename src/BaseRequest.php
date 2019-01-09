@@ -119,11 +119,11 @@ abstract class BaseRequest {
 				AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$session_keys_case),
 			);
 			$requests = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('AREQUESTS',static::$session_keys_case),FALSE,$spath,FALSE);
-			if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::app_session_key())!=session_id() || !is_array($requests)) {
+			if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::app_encryption_key())!=session_id() || !is_array($requests)) {
 				$errors .= 'Invalid Request!';
 			} elseif(!in_array(AppSession::ConvertToSessionCase($request_id,static::$session_keys_case),array_keys($requests))) {
 				$errors .= 'Invalid Request Data!';
-			}//if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::app_session_key())!=session_id() || !is_array($requests))
+			}//if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::app_encryption_key())!=session_id() || !is_array($requests))
 		}//if(!$errors)
 		if(!$errors) {
 			/* Get function name and process file */
@@ -439,7 +439,7 @@ HTML;
 					$subsession[] = AppSession::ConvertToSessionCase('NAPP_AREQUEST',self::$session_keys_case);
 					$subsession[] = AppSession::ConvertToSessionCase('AREQUESTS',self::$session_keys_case);
 					AppSession::SetGlobalParam(AppSession::ConvertToSessionCase($request_id,self::$session_keys_case),$req_sess_params,FALSE,$subsession,FALSE);
-					$session_id = rawurlencode(\GibberishAES::enc(session_id(),AppConfig::app_session_key()));
+					$session_id = rawurlencode(\GibberishAES::enc(session_id(),AppConfig::app_encryption_key()));
 					$postparams = $this->PreparePostParams($post_params);
 					$args_separators = [$this->app_params_sep,$this->app_arr_params_sep,$this->app_arr_key_sep];
 					$phash = AppConfig::app_use_window_name() ? "'+ARequest.get(window.name)+'".self::$app_arg_sep : '';
