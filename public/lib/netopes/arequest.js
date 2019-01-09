@@ -22,7 +22,7 @@ const ARequest = {
 	timers : [],
 	updateProcOn : function(add_val,loader) {
 		if(loader) {
-			var lkey = 'LOADER-'+String(loader).replaceAll(' ','_').replaceAll("'",'-').replaceAll('"','-');
+			let lkey = 'LOADER-'+String(loader).replaceAll(' ','_').replaceAll("'",'-').replaceAll('"','-');
 			if(!ARequest.procOn.hasOwnProperty(lkey)) { ARequest.procOn[lkey] = 0; }
 			ARequest.procOn[lkey] += add_val;
 			if(ARequest.procOn[lkey]<=0) {
@@ -38,9 +38,9 @@ const ARequest = {
 			loader(new_status);
 		} else {
 				if(new_status===1) {
-				$.event.trigger({ type: 'onARequestLoaderOn', loader: loader });
+					$.event.trigger({ type: 'onARequestLoaderOn', loader: loader });
 				} else {
-				$.event.trigger({ type: 'onARequestLoaderOff', loader: loader });
+					$.event.trigger({ type: 'onARequestLoaderOff', loader: loader });
 				}//if(new_status==1)
 		}//if(typeof(loader)=='function')
 	},//END updateIndicator
@@ -57,15 +57,15 @@ const ARequest = {
 		// 	} catch (e) {
 		// 	}//try
 		// } else if(window.ActiveXObject) {
-		// 	var versions = [
+		// 	let versions = [
 		//         'MSXML2.XmlHttp.5.0',
 		//         'MSXML2.XmlHttp.4.0',
 		//         'MSXML2.XmlHttp.3.0',
 		//         'MSXML2.XmlHttp.2.0',
 		//         'Microsoft.XmlHttp'
 		//     ];
-		//     var xhr;
-		//     for(var i=0;i<versions.length;i++) {
+		//     let xhr;
+		//     for(let i=0;i<versions.length;i++) {
 		//         try {
 		//             xhr = new ActiveXObject(versions[i]);
 		//             break;
@@ -77,7 +77,7 @@ const ARequest = {
 	},//END getRequest
 	run : function(php,encrypted,id,act,property,session_id,request_id,post_params,loader,async,js_script,conf,jparams,callback,run_oninit_event,eparam,call_type) {
 		if(conf) {
-			var cobj = false;
+			let cobj = false;
 			if(encrypted===1) {
 				eval('cobj = '+GibberishAES.dec(conf,request_id));
 			} else {
@@ -102,9 +102,9 @@ const ARequest = {
 		if(run_oninit_event && ARequest.onARequestInitEvent) {
 			$.event.trigger({ type: 'onARequestInit', callType: call_type, target: id, action: act, property: property });
 		}//if(run_oninit_event && ARequest.onARequestInitEvent)
-		var end_js_script = '';
+		let end_js_script = '';
 		if(js_script && js_script!=='') {
-			var scripts = js_script.split('~');
+			let scripts = js_script.split('~');
 			if(scripts[0]) { ARequest.runScript(scripts[0]); }
 			if(scripts[1]) { end_js_script = scripts[1]; }
 		}//if(js_script && js_script!='')
@@ -112,27 +112,27 @@ const ARequest = {
 		if(encrypted===1) {
 			php = GibberishAES.dec(php,request_id);
 			if(typeof(eparam)==='object') {
-				for(var ep in eparam) { php = php.replace(new RegExp('#'+ep+'#','g'),eparam[ep]); }
+				for(let ep in eparam) { php = php.replace(new RegExp('#'+ep+'#','g'),eparam[ep]); }
 			}//if(typeof(eparam)=='object')
-			var jparams_str = '';
+			let jparams_str = '';
 			if(typeof(jparams)==='object') {
-				for(var pn in jparams) { jparams_str += 'var '+pn+' = '+JSON.stringify(jparams[pn])+'; '; }
+				for(let pn in jparams) { jparams_str += 'var '+pn+' = '+JSON.stringify(jparams[pn])+'; '; }
 			}//if(typeof(jparams)=='object')
 			php = eval(jparams_str+'\''+php+'\'');
 		}//if(encrypted==1)
 		if(session_id===decodeURIComponent(session_id)) { session_id = encodeURIComponent(session_id); }
-		var requestString = 'req=' + encodeURIComponent((NAPP_UID ? GibberishAES.enc(php,NAPP_UID) : php))
+		let requestString = 'req=' + encodeURIComponent((NAPP_UID ? GibberishAES.enc(php,NAPP_UID) : php))
 			+ ARequest.reqSeparator + session_id + ARequest.reqSeparator + (request_id || '');
 		requestString += '&phash='+window.name+post_params;
 		if(encrypted===1 && typeof(callback)==='string') { callback = GibberishAES.dec(callback,request_id); }
-		var l_call_type = call_type ? call_type : 'run';
+		let l_call_type = call_type ? call_type : 'run';
 		ARequest.sendRequest(id,act,property,requestString,loader,end_js_script,async,callback,l_call_type);
 	},//END runExec
 	runFromString : function(data) {
 		eval('var objData = '+data);
-		var sphp = GibberishAES.dec(objData.php,'xSTR');
+		let sphp = GibberishAES.dec(objData.php,'xSTR');
 		sphp = eval("'"+sphp.replaceAll("\\'","'")+"'");
-		var call_type = objData.call_type ? objData.call_type : 'runFromString';
+		let call_type = objData.call_type ? objData.call_type : 'runFromString';
 		ARequest.run(sphp,objData.encrypted,objData.id,objData.act,objData.property,objData.session_id,objData.request_id,objData.post_params,objData.loader,objData.async,objData.js_script,objData.conf,objData.jparams,objData.callback,objData.run_oninit_event,objData.eparam,call_type);
 	},//END runFromString
 	timerRun : function(interval,timer,data) {
@@ -144,16 +144,16 @@ const ARequest = {
 	},//END timerRun
 	runRepeated : function(interval,php,encrypted,id,act,property,session_id,request_id,post_params,loader,async,js_script,conf,jparams,callback,run_oninit_event,eparam) {
 		if(interval && interval>0) {
-			var ltimer = request_id+(new Date().getTime());
-			var run_data = GibberishAES.enc(JSON.stringify({ php: GibberishAES.enc(php,'xSTR'), encrypted: encrypted, id: id, act: act, property: property, session_id: session_id, request_id: request_id, post_params: post_params, loader: loader, async: async, js_script: js_script, conf: conf, jparams: jparams, callback: callback, run_oninit_event: run_oninit_event, eparam: eparam, call_type: 'runRepeated' }),ltimer);
+			let ltimer = request_id+(new Date().getTime());
+			let run_data = GibberishAES.enc(JSON.stringify({ php: GibberishAES.enc(php,'xSTR'), encrypted: encrypted, id: id, act: act, property: property, session_id: session_id, request_id: request_id, post_params: post_params, loader: loader, async: async, js_script: js_script, conf: conf, jparams: jparams, callback: callback, run_oninit_event: run_oninit_event, eparam: eparam, call_type: 'runRepeated' }),ltimer);
 			ARequest.timerRun(interval,ltimer,run_data);
 		}//if(interval && interval>0)
 	},//END runRepeated
 	runScript : function(scriptString) {
 		if(!scriptString || scriptString==='') { return false; }
-		var script_type = 'eval';
-		var script_val = '';
-		var script = scriptString.split('|');
+		let script_type = 'eval';
+		let script_val = '';
+		let script = scriptString.split('|');
 		if(script[0] && script[1]) {
 			if(script[0]!=='') { script_type = script[0]; }
 			script_val = script[1];
@@ -173,17 +173,17 @@ const ARequest = {
 		}//END switch
 	},//END runScript
 	sendRequest : function(id,act,property,requestString,loader,js_script,async,callback,call_type) {
-		var req = ARequest.getRequest();
-		var lasync = typeof(async)!=='undefined' ? ((!(async===0 || async===false || async==='0'))) : true;
+		let req = ARequest.getRequest();
+		let lasync = typeof(async)!=='undefined' ? ((!(async===0 || async===false || async==='0'))) : true;
 		req.open('POST',NAPP_TARGET,lasync);
 		req.setRequestHeader('Content-type','application/x-www-form-urlencoded');
 		req.send(requestString);
 		req.onreadystatechange = function() {
 			if(req.readyState===4) {
 				if(req.status===200) {
-				    var actions = req.responseText.split(ARequest.actSeparator);
-                    var content = actions[0]+(actions[2] ? actions[2] : '');
-					var htmlTarget = req.getResponseHeader('HTMLTargetId');
+				    let actions = req.responseText.split(ARequest.actSeparator);
+                    let content = actions[0]+(actions[2] ? actions[2] : '');
+					let htmlTarget = req.getResponseHeader('HTMLTargetId');
                     if(typeof(htmlTarget)==='string' && htmlTarget.length>0) {
                         ARequest.put(content,htmlTarget,act,property);
                     } else if(id) {
@@ -219,7 +219,7 @@ const ARequest = {
 		if(!id) return;
 		if(property) {
 			try {
-				var ob = document.getElementById(id);
+				let ob = document.getElementById(id);
 				if(act=='p') {
 					ob[property] = content + ob[property];
 				} else if(act=='a') {
@@ -235,15 +235,15 @@ const ARequest = {
 		}//if(property)
 	},//END put
 	getRadioValueFromObject : function(obj,parent,name) {
-		var result = null;
-		var radios = null;
+		let result = null;
+		let radios = null;
 		if(typeof(obj)=='object' && obj!=null) {
 			if(typeof(name)!='string' || name.length==0) {
 				name = (typeof(obj.name)=='string' && obj.name.length>0 ? obj.name : '');
 			}//if(typeof(name)!='string' || name.length==0)
 			if(name.length>0) {
 				if(typeof(parent)!='object' || parent==null) {
-					var dparent = obj.dataset.parent;
+					let dparent = obj.dataset.parent;
 					if(dparent) {
 						parent = document.getElementById(dparent);
 					} else {
@@ -252,7 +252,7 @@ const ARequest = {
 				}//if(typeof(parent)!='object')
 				if(typeof(parent)=='object' && parent!=null) {
 					radios = parent.querySelectorAll('[name='+name+']');
-					for(var i=0;i<radios.length;i++) {
+					for(let i=0;i<radios.length;i++) {
 						if(radios[i].checked) {
 							result = radios[i].value;
 							break;
@@ -262,7 +262,7 @@ const ARequest = {
 			}//if(name.length>0)
 		} else if(typeof(parent)=='object' && parent!=null && typeof(name)=='string' && name.length>0) {
 			radios = parent.querySelectorAll('[name='+name+']');
-			for(var i=0;i<radios.length;i++) {
+			for(let i=0;i<radios.length;i++) {
 				if(radios[i].checked) {
 					result = radios[i].value;
 					break;
@@ -272,8 +272,9 @@ const ARequest = {
 		return result;
 	},//END getRadioValueFromObject
 	getFromObject : function(obj,property,attribute) {
-		var val = '';
+		let val = '';
 		if(typeof(obj)!=='object' || obj==null || !property) { return val; }
+		let dformat;
 		switch(property) {
 			case 'option':
 				if(typeof(attribute)==='string' && attribute.length>0) {
@@ -303,20 +304,20 @@ const ARequest = {
 				break;
 			case 'nvalue':
 				val = obj.value;
-				var nformat = obj.getAttribute('data-format');
+				let nformat = obj.getAttribute('data-format');
 				if(nformat) {
-					var farr = nformat.split('|');
+					let farr = nformat.split('|');
 					val = val.replaceAll(farr[3],'').replaceAll(farr[2],'');
 					if(farr[1]) { val = val.replaceAll(farr[1],'.'); }
 				}//if(nformat)
 				break;
 			case 'dvalue':
 				val = obj.value;
-				var dformat = obj.getAttribute('data-format');
+				dformat = obj.getAttribute('data-format');
 				if(dformat) {
-					var tformat = obj.getAttribute('data-timeformat');
+					let tformat = obj.getAttribute('data-timeformat');
 					if(tformat) { dformat += ' ' + tformat; }
-					var dt = getDateFromFormat(val,dformat);
+					let dt = getDateFromFormat(val,dformat);
 					if(dt>0) {
 						if(dformat.split(' ').length>1) {
 							val = formatDate(new Date(dt),'yyyy-MM-dd HH:mm:ss');
@@ -330,13 +331,13 @@ const ARequest = {
 				break;
 			case 'fdvalue':
 				val = obj.value;
-				var dformat = obj.getAttribute('data-format');
+				dformat = obj.getAttribute('data-format');
 				if(dformat) {
-					var tformat = obj.getAttribute('data-timeformat');
+					let tformat = obj.getAttribute('data-timeformat');
 					if(tformat) { dformat += ' ' + tformat; }
-					var dt = getDateFromFormat(val,dformat);
+					let dt = getDateFromFormat(val,dformat);
 					if(dt>0) {
-						var outformat = obj.getAttribute('data-out-format');
+						let outformat = obj.getAttribute('data-out-format');
 						if(outformat) {
 							val = formatDate(new Date(dt),outformat);
 						} else {
@@ -381,61 +382,61 @@ const ARequest = {
 	},//END getFromObject
 	getToArray : function(obj,initial) {
 		if(typeof(obj)!=='object' || obj==null) { return initial; }
-		var aresult;
-		var nName = obj.nodeName.toLowerCase();
-		var objName = obj.getAttribute('name');
+		let aresult;
+		let nName = obj.nodeName.toLowerCase();
+		let objName = obj.getAttribute('name');
 		if(!objName || objName.length<=0) { objName = obj.getAttribute('data-name'); }
 		if(objName) {
-			var names = objName.replace(/^[\w|\-|_]+/,"$&]").replace(/]$/,"").split("][");
+			let names = objName.replace(/^[\w|\-|_]+/,"$&]").replace(/]$/,"").split("][");
 			if(nName==='input' || nName==='select' || nName==='textarea') {
 				switch(obj.getAttribute('type')) {
 					case 'checkbox':
 						if(obj.checked===true) {
 							if(obj.value) {
-								var val = obj.value;
+								let val = obj.value;
 								val = ARequest.escapeString(val.split(ARequest.actSeparator).join(''));
 							} else {
-								var val = 0;
+								let val = 0;
 							}//if(obj.value)
 						} else {
-							var val = 0;
+							let val = 0;
 						}//if(obj.checked===true)
 						break;
 					case 'radio':
-						var rval = document.querySelector('input[type=radio][name='+objName+']:checked').value;
+						let rval = document.querySelector('input[type=radio][name='+objName+']:checked').value;
 						if(rval) {
-							var val = ARequest.escapeString(rval.split(ARequest.actSeparator).join(''));
+							let val = ARequest.escapeString(rval.split(ARequest.actSeparator).join(''));
 						} else {
-							var val = 0;
+							let val = 0;
 						}//if(rval)
 						break;
 					default:
-						var pafprop = obj.getAttribute('data-paf-prop');
+						let pafprop = obj.getAttribute('data-paf-prop');
 						if(typeof(pafprop)=='string' && pafprop.length>0) {
-							var pp_arr = pafprop.split(':');
+							let pp_arr = pafprop.split(':');
 							if(pp_arr.length>1) {
-								var val = ARequest.getFromObject(obj,pp_arr[0],pp_arr[1]);
+								let val = ARequest.getFromObject(obj,pp_arr[0],pp_arr[1]);
 							} else {
-								var val = ARequest.getFromObject(obj,pp_arr[0]);
+								let val = ARequest.getFromObject(obj,pp_arr[0]);
 							}//if(pp_arr.length>1)
 						} else {
-							var val = ARequest.getFromObject(obj,'value');
+							let val = ARequest.getFromObject(obj,'value');
 						}//if(typeof(pafprop)=='string' && pafprop.length>0)
 						val = ARequest.escapeString(val);
 						break;
 				}//END switch
 			} else {
-				var val = ARequest.getFromObject(obj,'content');
+				let val = ARequest.getFromObject(obj,'content');
 				val = ARequest.escapeString(val);
 			}//if(nName=='input' || nName=='select' || nName=='textarea')
 		    if(names.length>0) {
-		    	for(var i=names.length-1;i>=0;i--) {
-		    		var tmp;
-		    		if(names[i]!='') {
+		    	for(let i=names.length-1;i>=0;i--) {
+		    		let tmp;
+		    		if(names[i]!=='') {
 			    		tmp = {};
-			    		tmp['#k#_'+names[i]] = (i==(names.length-1) ? val : aresult);
+			    		tmp['#k#_'+names[i]] = (i===(names.length-1) ? val : aresult);
 			    	} else {
-			    		tmp = [ (i==(names.length-1) ? val : aresult) ];
+			    		tmp = [ (i===(names.length-1) ? val : aresult) ];
 			    	}//if(names[i]!='')
 			    	aresult = tmp;
 		    	}//END for
@@ -447,12 +448,12 @@ const ARequest = {
 	    return arrayMerge(initial,aresult,true);
 	},//END getToArray
 	getFormContent : function(id) {
-		var result = '';
-		var frm = document.getElementById(id);
-		var rbelements = {};
+		let result = '';
+		let frm = document.getElementById(id);
+		let rbelements = {};
 		if(typeof(frm)=='object') {
 			$(frm).find('.postable').each(function() {
-				if(this.nodeName.toLowerCase()=='input' && this.getAttribute('type')=='radio') {
+				if(this.nodeName.toLowerCase()==='input' && this.getAttribute('type')==='radio') {
 					if(!rbelements.hasOwnProperty(this.getAttribute('name'))) {
                         rbelements[this.getAttribute('name')] = 1;
                         result = ARequest.getToArray(this,result);
@@ -467,14 +468,14 @@ const ARequest = {
 		return result;
 	},//END getFormContent
 	get : function(id,property,attribute) {
-		var result = null;
+		let result = null;
 		if(!property) {
 			result = ARequest.escapeString(id);
 		} else if(property=='form') {
 			result = ARequest.getFormContent(id);
 		} else {
-			var eObj = document.getElementById(id);
-			var val = null;
+			let eObj = document.getElementById(id);
+			let val = null;
 			if(typeof(eObj)!='object') {
 				console.log('Invalid element: '+id);
 			} else if(eObj==null) {
@@ -492,7 +493,7 @@ const ARequest = {
 	},//END get
 	escapeString : function(val) {
 		if(ARequest.escapeStringMode!='custom') { return val; }
-		var nval = String(val);
+		let nval = String(val);
 		nval = nval.replace(new RegExp('\\|','g'),ARequest.pipeChar);
 		nval = nval.replace(new RegExp('~','g'),ARequest.tildeChar);
 		return nval;
@@ -502,13 +503,13 @@ const ARequest = {
 		return JSON.stringify(val);
 	},//END serialize
 	phpSerialize : function(mixed_value) {
-		var val,key,okey,
+		let val,key,okey,
 	    ktype = '',
 	    vals = '',
 	    count = 0,
 	    end = '';
 	    _utf8Size = function(str) {
-      		var size = 0,
+      		let size = 0,
 	        i = 0,
 	        l = str.length,
 	        code = '';
@@ -525,7 +526,7 @@ const ARequest = {
       		return size;
 		};//_utf8Size = function(str)
 		_getType = function(inp) {
-			var match,key,cons,types,type = typeof inp;
+			let match,key,cons,types,type = typeof inp;
 		    if(type === 'object' && !inp) { return 'null'; }
 			if(type === 'object') {
       			if(!inp.constructor) { return 'object'; }
@@ -555,7 +556,7 @@ const ARequest = {
 				val = (Math.round(mixed_value) == mixed_value ? 'i' : 'd') + ':' + mixed_value;
 				break;
 			case 'string':
-				var lval = ARequest.escapeString(mixed_value);
+				let lval = ARequest.escapeString(mixed_value);
 				val = 's:' + _utf8Size(lval) + ':"' + lval + '"';
       			break;
 		    case 'array':
@@ -586,14 +587,14 @@ const ARequest = {
 		document.getElementById(ob).style.cssText = styleString;
 	},//END SetStyle
 	getForm : function(f) {
-		var vals = {};
-		for(var i=0; i<f.length; i++){
+		let vals = {};
+		for(let i=0; i<f.length; i++){
 			if(f[i].id) { vals[f[i].id] = f[i].value; }
-		}//for(var i=0; i<f.length; i++)
+		}//for(let i=0; i<f.length; i++)
 		return vals;
 	},//END getForm
 	jquiConfirmDialog : function(options,callback) {
-		var cfg = {
+		let cfg = {
 			type: 'jqui',
 			message: '',
 			title: '',
@@ -607,13 +608,13 @@ const ARequest = {
 		if(typeof(cfg.title)!='string') { cfg.title = ''; }
 		if(typeof(cfg.ok)!='string' || cfg.ok.length==0) { cfg.ok = 'OK'; }
 		if(typeof(cfg.cancel)!='string' || cfg.cancel.length==0) { cfg.cancel = 'Cancel'; }
-		var lbuttons = {};
+		let lbuttons = {};
 		lbuttons[decodeURIComponent(cfg.ok)] = function() { $(this).dialog('destroy'); callback(); };
 		lbuttons[decodeURIComponent(cfg.cancel)] = function() { $(this).dialog('destroy'); };
 		if(!$('#'+cfg.targetid).length) { $('body').append('<div id="'+cfg.targetid+'" style="display: none;"></div>'); }
 		$('#'+cfg.targetid).html(decodeURIComponent(cfg.message));
-		var minWidth = $(window).width()>500 ? 500 : ($(window).width() - 20);
-		var maxWidth = $(window).width()>600 ? ($(window).width() - 80) : ($(window).width() - 20);
+		let minWidth = $(window).width()>500 ? 500 : ($(window).width() - 20);
+		let maxWidth = $(window).width()>600 ? ($(window).width() - 80) : ($(window).width() - 20);
 		$('#'+cfg.targetid).dialog({
 			title: decodeURIComponent(cfg.title),
 			dialogClass: 'ui-alert-dlg',
@@ -634,13 +635,13 @@ const ARequest = {
 		ARequest.timers[timer] = setTimeout(function(){ ARequest.doWork(interval,timer,data); },interval);
 	},//END function doWork
 	onMessage : function(e) {
-		var obj = JSON.parse(e.data);
+		let obj = JSON.parse(e.data);
 		if(ARequest.timers[obj.timer]) { clearTimeout(ARequest.timers[obj.timer]); }
 		ARequest.doWork(obj.interval,obj.timer,obj.data);
 	}//END onMessage
-};//END var ARequest
+};//END const ARequest
 function nappEscapeElement(elementid) {
-	var nval = String(val);
+	let nval = String(val);
 	nval = nval.replace(new RegExp('\\|','g'),ARequest.pipeChar);
 	nval = nval.replace(new RegExp('~','g'),ARequest.tildeChar);
 	return nval;
