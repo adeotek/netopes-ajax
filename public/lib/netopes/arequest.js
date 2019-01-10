@@ -50,30 +50,6 @@ const ARequest = {
         } catch (e) {
             console.log(e);
         }//try
-	    // DEPRECATED: removed since IE8
-		// if(window.XMLHttpRequest) {
-		// 	try {
-		// 		return new XMLHttpRequest();
-		// 	} catch (e) {
-		// 	}//try
-		// } else if(window.ActiveXObject) {
-		// 	let versions = [
-		//         'MSXML2.XmlHttp.5.0',
-		//         'MSXML2.XmlHttp.4.0',
-		//         'MSXML2.XmlHttp.3.0',
-		//         'MSXML2.XmlHttp.2.0',
-		//         'Microsoft.XmlHttp'
-		//     ];
-		//     let xhr;
-		//     for(let i=0;i<versions.length;i++) {
-		//         try {
-		//             xhr = new ActiveXObject(versions[i]);
-		//             break;
-		//         } catch (e) {
-		//         }//END try
-		//     }//END for
-		//     return xhr;
-		// }//if (window.XMLHttpRequest)
 	},//END getRequest
 	run : function(php,encrypted,id,act,property,session_id,request_id,post_params,loader,async,js_script,conf,jparams,callback,run_oninit_event,eparam,call_type) {
 		if(conf) {
@@ -220,11 +196,11 @@ const ARequest = {
 		if(property) {
 			try {
 				let ob = document.getElementById(id);
-				if(act=='p') {
+				if(act==='p') {
 					ob[property] = content + ob[property];
-				} else if(act=='a') {
+				} else if(act==='a') {
 					ob[property] += content;
-				} else if(property.split('.')[0]=='style') {
+				} else if(property.split('.')[0]==='style') {
 					ob.style[property.split('.')[1]] = content;
 				} else if(ob) {
 					ob[property] = content;
@@ -238,7 +214,7 @@ const ARequest = {
 		let result = null;
 		let radios = null;
 		if(typeof(obj)=='object' && obj!=null) {
-			if(typeof(name)!='string' || name.length==0) {
+			if(typeof(name)!='string' || name.length===0) {
 				name = (typeof(obj.name)=='string' && obj.name.length>0 ? obj.name : '');
 			}//if(typeof(name)!='string' || name.length==0)
 			if(name.length>0) {
@@ -373,7 +349,7 @@ const ARequest = {
 				if(typeof(obj.type)==='string' && obj.type==='radio' && property==='value') {
 					val = ARequest.getRadioValueFromObject(obj,null,null);
 				} else {
-				val = obj[property];
+					val = obj[property];
 				}//if(typeof(obj.type)=='string' && obj.type=='radio')
 				break;
 		}//END switch
@@ -382,7 +358,7 @@ const ARequest = {
 	},//END getFromObject
 	getToArray : function(obj,initial) {
 		if(typeof(obj)!=='object' || obj==null) { return initial; }
-		let aresult;
+		let aresult, val;
 		let nName = obj.nodeName.toLowerCase();
 		let objName = obj.getAttribute('name');
 		if(!objName || objName.length<=0) { objName = obj.getAttribute('data-name'); }
@@ -393,21 +369,20 @@ const ARequest = {
 					case 'checkbox':
 						if(obj.checked===true) {
 							if(obj.value) {
-								let val = obj.value;
-								val = ARequest.escapeString(val.split(ARequest.actSeparator).join(''));
+								val = ARequest.escapeString(obj.value.split(ARequest.actSeparator).join(''));
 							} else {
-								let val = 0;
+								val = 0;
 							}//if(obj.value)
 						} else {
-							let val = 0;
+							val = 0;
 						}//if(obj.checked===true)
 						break;
 					case 'radio':
 						let rval = document.querySelector('input[type=radio][name='+objName+']:checked').value;
 						if(rval) {
-							let val = ARequest.escapeString(rval.split(ARequest.actSeparator).join(''));
+							val = ARequest.escapeString(rval.split(ARequest.actSeparator).join(''));
 						} else {
-							let val = 0;
+							val = 0;
 						}//if(rval)
 						break;
 					default:
@@ -415,19 +390,18 @@ const ARequest = {
 						if(typeof(pafprop)=='string' && pafprop.length>0) {
 							let pp_arr = pafprop.split(':');
 							if(pp_arr.length>1) {
-								let val = ARequest.getFromObject(obj,pp_arr[0],pp_arr[1]);
+								val = ARequest.getFromObject(obj,pp_arr[0],pp_arr[1]);
 							} else {
-								let val = ARequest.getFromObject(obj,pp_arr[0]);
+								val = ARequest.getFromObject(obj,pp_arr[0]);
 							}//if(pp_arr.length>1)
 						} else {
-							let val = ARequest.getFromObject(obj,'value');
+							val = ARequest.getFromObject(obj,'value');
 						}//if(typeof(pafprop)=='string' && pafprop.length>0)
 						val = ARequest.escapeString(val);
 						break;
 				}//END switch
 			} else {
-				let val = ARequest.getFromObject(obj,'content');
-				val = ARequest.escapeString(val);
+				val = ARequest.escapeString(ARequest.getFromObject(obj,'content'));
 			}//if(nName=='input' || nName=='select' || nName=='textarea')
 		    if(names.length>0) {
 		    	for(let i=names.length-1;i>=0;i--) {
@@ -444,7 +418,7 @@ const ARequest = {
 		    	aresult = [ val ];
 		    }//if(names.length>0)
 		}//if(objName)
-		if(typeof(initial)!='object' && typeof(initial)!='array') { return aresult; }
+		if(typeof(initial)!='object' && typeof(initial)!=='array') { return aresult; }
 	    return arrayMerge(initial,aresult,true);
 	},//END getToArray
 	getFormContent : function(id) {
@@ -492,14 +466,14 @@ const ARequest = {
 		return ARequest.serialize(result);
 	},//END get
 	escapeString : function(val) {
-		if(ARequest.escapeStringMode!='custom') { return val; }
+		if(ARequest.escapeStringMode!=='custom') { return val; }
 		let nval = String(val);
 		nval = nval.replace(new RegExp('\\|','g'),ARequest.pipeChar);
 		nval = nval.replace(new RegExp('~','g'),ARequest.tildeChar);
 		return nval;
 	},//END escapeString
 	serialize: function(val) {
-		if(ARequest.serializeMode=='php') { return ARequest.phpSerialize(val); }
+		if(ARequest.serializeMode==='php') { return ARequest.phpSerialize(val); }
 		return JSON.stringify(val);
 	},//END serialize
 	phpSerialize : function(mixed_value) {
@@ -535,7 +509,7 @@ const ARequest = {
       			if(match) { cons = match[1].toLowerCase(); }
       			types = ['boolean', 'number', 'string', 'array'];
       			for(key in types) {
-        			if(cons == types[key]) {
+        			if(cons === types[key]) {
           				type = types[key];
           				break;
         			}//if(cons == types[key])
@@ -553,7 +527,7 @@ const ARequest = {
 				val = 'b:' + (mixed_value ? '1' : '0');
 				break;
     		case 'number':
-				val = (Math.round(mixed_value) == mixed_value ? 'i' : 'd') + ':' + mixed_value;
+				val = (Math.round(mixed_value) === mixed_value ? 'i' : 'd') + ':' + mixed_value;
 				break;
 			case 'string':
 				let lval = ARequest.escapeString(mixed_value);
@@ -603,11 +577,11 @@ const ARequest = {
 			targetid: ''
 		};
 		if(options && typeof(options)=='object') { $.extend(cfg,options); }
-		if(typeof(cfg.targetid)!='string' || cfg.targetid.length==0) { cfg.targetid = getUid(); }
-		if(typeof(cfg.message)!='string' || cfg.message.length==0) { cfg.message = '???'; }
+		if(typeof(cfg.targetid)!='string' || cfg.targetid.length===0) { cfg.targetid = getUid(); }
+		if(typeof(cfg.message)!='string' || cfg.message.length===0) { cfg.message = '???'; }
 		if(typeof(cfg.title)!='string') { cfg.title = ''; }
-		if(typeof(cfg.ok)!='string' || cfg.ok.length==0) { cfg.ok = 'OK'; }
-		if(typeof(cfg.cancel)!='string' || cfg.cancel.length==0) { cfg.cancel = 'Cancel'; }
+		if(typeof(cfg.ok)!='string' || cfg.ok.length===0) { cfg.ok = 'OK'; }
+		if(typeof(cfg.cancel)!='string' || cfg.cancel.length===0) { cfg.cancel = 'Cancel'; }
 		let lbuttons = {};
 		lbuttons[decodeURIComponent(cfg.ok)] = function() { $(this).dialog('destroy'); callback(); };
 		lbuttons[decodeURIComponent(cfg.cancel)] = function() { $(this).dialog('destroy'); };
