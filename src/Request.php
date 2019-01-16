@@ -57,7 +57,7 @@ class Request extends BaseRequest {
 			} else {
 				ModulesProvider::Exec($module,$method,$o_params,NULL,(bool)$reset_session_params);
 			}//if($non_custom)
-			if(strlen(AppConfig::app_arequest_js_callback())) { $this->ExecuteJs(AppConfig::app_arequest_js_callback()); }
+			if(strlen(AppConfig::GetValue('app_arequest_js_callback'))) { $this->ExecuteJs(AppConfig::GetValue('app_arequest_js_callback')); }
 		} catch(AppException $e) {
 			\ErrorHandler::AddError($e);
 		}//END try
@@ -77,9 +77,9 @@ class Request extends BaseRequest {
 	 */
 	public function ControlAjaxRequest($window_name,$controlhash,$method,$params = NULL,$control = NULL,$viapost = 0) {
 		if(!strlen($window_name)) { $this->ExecuteJs("window.name = '{$this->app->phash}'"); }
-		// \NApp::_Dlog($controlhash,'$controlhash');
-		// \NApp::_Dlog($method,'$method');
-		// \NApp::_Dlog($params,'$params');
+		// \NApp::Dlog($controlhash,'$controlhash');
+		// \NApp::Dlog($method,'$method');
+		// \NApp::Dlog($params,'$params');
 		try {
 			$olduserid = $this->app->GetPageParam('user_id');
 			$userid = $this->app->GetParam('user_id');
