@@ -12,9 +12,10 @@
  * @filesource
  */
 namespace NETopes\Ajax;
-use NETopes\Core\App\IApp;
 use NETopes\Core\AppConfig;
 use NETopes\Core\AppSession;
+use NApp;
+
 /**
  * Class Request
  *
@@ -31,73 +32,72 @@ abstract class BaseRequest {
 	 * @var    string Session sub-array key for storing ARequest data
 	 * @access protected
 	 */
-	protected $subsession = NULL;
+	protected $subSession = NULL;
 	/**
 	 * @var    array Custom post params to be sent with the ajax request
 	 * @access protected
 	 */
-	protected $post_params = [];
+	protected $postParams = [];
 	/**
 	 * @var    array List of actions to be executed on the ajax request
 	 * @access protected
 	 */
-	protected $request_actions = [];
+	protected $requestActions = [];
 	/**
 	 * @var    string NETopes AJAX request session data ID
 	 * @access protected
 	 */
-	protected $app_req_id = NULL;
+	protected $requestId = NULL;
 	/**
 	 * @var    string Control key for securing the request session data
 	 * @access protected
 	 */
-	protected $app_req_key = '';
+	protected $requestKey = '';
 	/**
 	 * @var    int Session keys case
 	 * @access protected
 	 */
-	public static $session_keys_case = CASE_UPPER;
+	public static $sessionKeysCase = CASE_UPPER;
 	/**
 	 * @var    string Separator for ajax request arguments
 	 * @access protected
 	 */
-	public static $app_req_sep = ']!r![';
+	public static $requestSeparator = ']!r![';
 	/**
 	 * @var    string Separator for function arguments
 	 * @access protected
 	 */
-	public static $app_arg_sep = ']!r!a![';
+	public static $argumentSeparator = ']!r!a![';
 	/**
 	 * @var    string Separator for ajax actions
 	 * @access protected
 	 */
-	public static $app_act_sep = ']!r!s![';
+	public static $actionSeparator = ']!r!s![';
 	/**
 	 * @var    string Parsing arguments separator
 	 * @access protected
 	 */
-	protected $app_params_sep = ',';
+	protected $paramsSeparator = ',';
 	/**
 	 * @var    string Array elements separator
 	 * @access protected
 	 */
-	protected $app_arr_params_sep = '~';
+	protected $arrayParamsSeparator = '~';
 	/**
 	 * @var    string Array key-value separator
 	 * @access protected
 	 */
-	protected $app_arr_key_sep = '|';
+	protected $arrayKeySeparator = '|';
     /**
      * Execute a method of the AJAX Request implementing class
      *
-     * @param  \NETopes\Core\App\IApp $app
      * @param  array                  $postParams Parameters to be send via post on ajax requests
      * @param  string|array           $subSession Sub-session key/path
      * @return void
      * @access public
      * @throws \NETopes\Core\AppException
      */
-	public static function PrepareAndExecuteRequest(&$app,array $postParams = [],$subSession = NULL) {
+	public static function PrepareAndExecuteRequest(array $postParams = [],$subSession = NULL) {
 	    /** @var \NETopes\Core\App\App $app */
 		$errors = '';
 		$request = array_key_exists('req',$_POST) ? $_POST['req'] : NULL;
@@ -111,33 +111,33 @@ abstract class BaseRequest {
 		$requests = NULL;
 		if(!$errors) {
 			/* Start session and set ID to the expected paf session */
-			list($php,$session_id,$request_id) = explode(static::$app_req_sep,$request);
+			list($php,$session_id,$request_id) = explode(static::$requestSeparator,$request);
 			/* Validate this request */
-			$spath = array(
-			    $app->current_namespace,
-				AppSession::ConvertToSessionCase(AppConfig::GetValue('app_session_key'),static::$session_keys_case),
-				AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$session_keys_case),
-			);
-			$requests = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('AREQUESTS',static::$session_keys_case),FALSE,$spath,FALSE);
+			$spath = [
+			    NApp::$currentNamespace,
+				AppSession::ConvertToSessionCase(AppConfig::GetValue('app_session_key'),static::$sessionKeysCase),
+				AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$sessionKeysCase),
+			];
+			$requests = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('AREQUESTS',static::$sessionKeysCase),FALSE,$spath,FALSE);
 			if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests)) {
 				$errors .= 'Invalid Request!';
-			} elseif(!in_array(AppSession::ConvertToSessionCase($request_id,static::$session_keys_case),array_keys($requests))) {
+			} elseif(!in_array(AppSession::ConvertToSessionCase($request_id,static::$sessionKeysCase),array_keys($requests))) {
 				$errors .= 'Invalid Request Data!';
 			}//if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests))
 		}//if(!$errors)
 		if(!$errors) {
 			/* Get function name and process file */
-			$REQ = $requests[AppSession::ConvertToSessionCase($request_id,static::$session_keys_case)];
-			$method = $REQ[AppSession::ConvertToSessionCase('METHOD',static::$session_keys_case)];
-			$lkey = AppSession::ConvertToSessionCase('CLASS',static::$session_keys_case);
+			$REQ = $requests[AppSession::ConvertToSessionCase($request_id,static::$sessionKeysCase)];
+			$method = $REQ[AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)];
+			$lkey = AppSession::ConvertToSessionCase('CLASS',static::$sessionKeysCase);
 			$class = (array_key_exists($lkey,$REQ) && $REQ[$lkey]) ? $REQ[$lkey] : AppConfig::GetValue('ajax_class_name');
 			if(!class_exists($class)) {
-			    $lkey = AppSession::ConvertToSessionCase('CLASS_FILE',static::$session_keys_case);
+			    $lkey = AppSession::ConvertToSessionCase('CLASS_FILE',static::$sessionKeysCase);
                 if(array_key_exists($lkey,$REQ) && isset($REQ[$lkey])) {
                     $class_file = $REQ[$lkey];
                 } else {
                     $app_class_file = AppConfig::GetValue('ajax_class_file');
-                    $class_file = $app_class_file ? $app->app_path.$app_class_file : '';
+                    $class_file = $app_class_file ? NApp::$appPath.$app_class_file : '';
                 }//if(array_key_exists($lkey,$REQ) && isset($REQ[$lkey]))
                 if(strlen($class_file)) {
                     if(file_exists($class_file)) {
@@ -148,40 +148,40 @@ abstract class BaseRequest {
                 }//if(strlen($class_file))
 			}//if(!class_exists($class))
 			if(!$errors) {
-			    $app->arequest = new $class($app,$subSession,$postParams);
+			    $ajaxRequest = new $class($subSession,$postParams);
 			    /* Execute the requested function */
-			    $app->arequest->ExecuteRequest($method,$php);
-				$app->_SessionCommit(NULL,TRUE);
-				if($app->arequest->HasActions()) { echo $app->arequest->Send(); }
-				$content = $app->_GetOutputBufferContent();
+			    $ajaxRequest->ExecuteRequest($method,$php);
+			    NApp::SetAjaxRequest($ajaxRequest);
+				NApp::SessionCommit(NULL,TRUE);
+				if($ajaxRequest->HasActions()) { echo $ajaxRequest->Send(); }
+				$content = NApp::GetOutputBufferContent();
 			} else {
 				$content = $errors;
 			}//if(!$errors)
 			echo $content;
 		} else {
-			$app::Log2File(['type'=>'error','message'=>$errors,'no'=>-1,'file'=>__FILE__,'line'=>__LINE__],$app->app_path.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('errors_log_file'));
+			$app::Log2File(['type'=>'error','message'=>$errors,'no'=>-1,'file'=>__FILE__,'line'=>__LINE__],NApp::$appPath.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('errors_log_file'));
 			// vprint($errors);
-			echo static::$app_act_sep.'window.location.href = "'.$app::GetAppWebLink().'";';
+			echo static::$actionSeparator.'window.location.href = "'.$app::GetAppBaseUrl().'";';
 		}//if(!$errors)
 	}//END public static function PrepareAndExecuteRequest
     /**
      * AJAX Request constructor function
      *
-     * @param  \NETopes\Core\App\IApp $app
      * @param  string                 $subSession Sub-session key/path
      * @param array|null              $postParams
      * @access public
      * @throws \NETopes\Core\AppException
      */
-	public final function __construct(IApp &$app,$subSession = NULL,?array $postParams = []) {
+	public final function __construct($subSession = NULL,?array $postParams = []) {
 		$this->app = &$app;
 		if(is_string($subSession) && strlen($subSession)) {
-			$this->subsession = array($subSession,AppConfig::GetValue('app_session_key'));
+			$this->subSession = array($subSession,AppConfig::GetValue('app_session_key'));
 		} elseif(is_array($subSession) && count($subSession)) {
 			$subSession[] = AppConfig::GetValue('app_session_key');
-			$this->subsession = $subSession;
+			$this->subSession = $subSession;
 		} else {
-			$this->subsession = AppConfig::GetValue('app_session_key');
+			$this->subSession = AppConfig::GetValue('app_session_key');
 		}//if(is_string($subSession) && strlen($subSession))
 		$this->Init();
 		if(is_array($postParams) && count($postParams)) { $this->SetPostParams($postParams); }
@@ -195,10 +195,11 @@ abstract class BaseRequest {
      */
     public function GetJsScripts(string $jsRootUrl): string {
 	    $ajaxTargetScript = AppConfig::GetValue('app_ajax_target');
+	    $appBaseUrl = NApp::$appBaseUrl;
 	    $js = <<<HTML
         <script type="text/javascript">
-            const NAPP_TARGET = '{$this->app->app_web_link}/{$ajaxTargetScript}';
-            const NAPP_UID = '{$this->app_req_key}';
+            const NAPP_TARGET = '{$appBaseUrl}/{$ajaxTargetScript}';
+            const NAPP_UID = '{$this->requestKey}';
         </script>
         <script type="text/javascript" src="{$jsRootUrl}/arequest.min.js?v=1901081"></script>
 HTML;
@@ -212,12 +213,12 @@ HTML;
      * @throws \NETopes\Core\AppException
      */
 	protected function Init() {
-		$laapp_req_id = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('NAPP_RID',self::$session_keys_case),FALSE,$this->subsession,FALSE);
+		$laapp_req_id = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('NAPP_RID',self::$sessionKeysCase),FALSE,$this->subSession,FALSE);
 		if(strlen($laapp_req_id)) {
-			$this->app_req_id = $laapp_req_id;
+			$this->requestId = $laapp_req_id;
 		} else {
-			$this->app_req_id = AppSession::GetNewUID();
-			AppSession::SetGlobalParam(AppSession::ConvertToSessionCase('NAPP_RID',self::$session_keys_case),$this->app_req_id,FALSE,$this->subsession,FALSE);
+			$this->requestId = AppSession::GetNewUID();
+			AppSession::SetGlobalParam(AppSession::ConvertToSessionCase('NAPP_RID',self::$sessionKeysCase),$this->requestId,FALSE,$this->subSession,FALSE);
 		}//if(strlen($laapp_req_id))
 		$this->StartSecureHttp();
 	}//END protected function Init
@@ -229,9 +230,9 @@ HTML;
      * @throws \NETopes\Core\AppException
      */
 	protected function ClearState() {
-		AppSession::UnsetGlobalParam(AppSession::ConvertToSessionCase('NAPP_RID',self::$session_keys_case),FALSE,$this->subsession,FALSE);
-		AppSession::UnsetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$session_keys_case),FALSE,$this->subsession,FALSE);
-		$this->app_req_id = $this->app_req_key = NULL;
+		AppSession::UnsetGlobalParam(AppSession::ConvertToSessionCase('NAPP_RID',self::$sessionKeysCase),FALSE,$this->subSession,FALSE);
+		AppSession::UnsetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$sessionKeysCase),FALSE,$this->subSession,FALSE);
+		$this->requestId = $this->requestKey = NULL;
 		$this->Init();
 	}//END protected function ClearState
     /**
@@ -240,19 +241,19 @@ HTML;
      */
 	protected function StartSecureHttp() {
 		if(!AppConfig::GetValue('app_secure_http')) { return; }
-		$this->app_req_key = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$session_keys_case),FALSE,$this->subsession,FALSE);
-		if(!strlen($this->app_req_key)) {
-			$this->app_req_key = AppSession::GetNewUID(AppConfig::GetValue('app_session_key'),'sha256');
-			AppSession::SetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$session_keys_case),$this->app_req_key,FALSE,$this->subsession,FALSE);
-		}//if(!strlen($this->app_req_key))
+		$this->requestKey = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$sessionKeysCase),FALSE,$this->subSession,FALSE);
+		if(!strlen($this->requestKey)) {
+			$this->requestKey = AppSession::GetNewUID(AppConfig::GetValue('app_session_key'),'sha256');
+			AppSession::SetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$sessionKeysCase),$this->requestKey,FALSE,$this->subSession,FALSE);
+		}//if(!strlen($this->requestKey))
 	}//END protected function StartSecureHttp
     /**
      *
      * @throws \NETopes\Core\AppException
      */
 	protected function ClearSecureHttp() {
-		AppSession::UnsetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$session_keys_case),FALSE,$this->subsession,FALSE);
-		$this->app_req_key = NULL;
+		AppSession::UnsetGlobalParam(AppSession::ConvertToSessionCase('NAPP_UID',self::$sessionKeysCase),FALSE,$this->subSession,FALSE);
+		$this->requestKey = NULL;
 	}//END protected function ClearSecureHttp
 	/**
 	 * Sets params to be send via post on the ajax request
@@ -262,13 +263,13 @@ HTML;
 	 * @access public
 	 */
 	public function SetPostParams($params) {
-		if(is_array($params) && count($params)) { $this->post_params = $params; }
+		if(is_array($params) && count($params)) { $this->postParams = $params; }
 	}//END public function SetPostParams
 	/**
 	 * @return bool
 	 */
 	public function HasActions() {
-		return (bool)count($this->request_actions);
+		return (bool)count($this->requestActions);
 	}//END public function HasActions
     /**
      * Sets params to be send via post on the ajax request
@@ -283,28 +284,28 @@ HTML;
 		return TRUE;
 	}//END public function SetPostParams
     /**
-     * @param bool $with_output
+     * @param bool $withOutput
      * @return string
      * @throws \NETopes\Core\AppException
      */
-	public function JsInit($with_output = TRUE) {
+	public function JsInit(bool $withOutput = TRUE) {
 		$js = '<script type="text/javascript">'."\n";
-		$js .= "\t".'var NAPP_PHASH="'.$this->app->phash.'";'."\n";
-		$js .= "\t".'var NAPP_TARGET="'.$this->app->app_web_link.'/'.AppConfig::GetValue('app_ajax_target').'";'."\n";
-		$js .= "\t".'var NAPP_UID="'.$this->app_req_key.'";'."\n";
-		$js .= "\t".'var NAPP_JS_PATH="'.$this->app->app_web_link.AppConfig::GetValue('app_js_path').'";'."\n";
+		$js .= "\t".'var NAPP_PHASH="'.NApp::GetPhash().'";'."\n";
+		$js .= "\t".'var NAPP_TARGET="'.NApp::$appBaseUrl.'/'.AppConfig::GetValue('app_ajax_target').'";'."\n";
+		$js .= "\t".'var NAPP_UID="'.$this->requestKey.'";'."\n";
+		$js .= "\t".'var NAPP_JS_PATH="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'";'."\n";
 		$js .= '</script>'."\n";
-		$js .= '<script type="text/javascript" src="'.$this->app->app_web_link.AppConfig::GetValue('app_js_path').'/gibberish-aes.min.js?v=1411031"></script>'."\n";
-		$js .= '<script type="text/javascript" src="'.$this->app->app_web_link.AppConfig::GetValue('app_js_path').'/arequest.min.js?v=1811011"></script>'."\n";
-		if(is_object($this->app->debugger)) {
-			$dbg_scripts = $this->app->debugger->GetScripts();
-			if(is_array($dbg_scripts) && count($dbg_scripts)) {
-				foreach($dbg_scripts as $dsk=>$ds) {
-					$js .= '<script type="text/javascript" src="'.$this->app->app_web_link.AppConfig::GetValue('app_js_path').'/debug'.$ds.'?v=1712011"></script>'."\n";
+		$js .= '<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/gibberish-aes.min.js?v=1411031"></script>'."\n";
+		$js .= '<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/arequest.min.js?v=1811011"></script>'."\n";
+		if(NApp::GetDebuggerState()) {
+			$dbgScripts = NApp::$debugger->GetScripts();
+			if(is_array($dbgScripts) && count($dbgScripts)) {
+				foreach($dbgScripts as $dsk=>$ds) {
+					$js .= '<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/debug'.$ds.'?v=1712011"></script>'."\n";
 				}//END foreach
-			}//if(is_array($dbg_scripts) && count($dbg_scripts))
-		}//if(is_object($this->app->debugger))
-		if($with_output===TRUE) { echo $js; }
+			}//if(is_array($dbgScripts) && count($dbgScripts))
+		}//if(NApp::GetDebuggerState())
+		if($withOutput===TRUE) { echo $js; }
 		return $js;
 	}//END public function JsInit
 	/**
@@ -324,18 +325,18 @@ HTML;
 				} else {
 					$lk = (is_numeric($k) ? '' : $k);
 				}//if(strlen($key))
-				$result .= (strlen($result) ? '~' : '');
+				$result .= (strlen($result) ? $this->arrayParamsSeparator : '');
 				$result .= $this->GetCommandParameters($v,$lk);
 			}//END foreach
 		} elseif(strlen($key) || strlen($val)) {
 			if(is_numeric($key) && is_string($val) && strpos($val,':')!==FALSE) {
 				$result = $val;
 			} else {
-				$result = (strlen($key) ? "'{$key}'|" : '').(strpos($val,':')!==FALSE ? $val : "'{$val}'");
+				$result = (strlen($key) ? "'{$key}'".$this->arrayKeySeparator : '').(strpos($val,':')!==FALSE ? $val : "'{$val}'");
 			}//if(is_numeric($key) && is_string($val) && strpos($val,':')!==FALSE)
 		}//if(is_array($value) && count($value))
 		return $result;
-	}//END public function GetCommandParmeters
+	}//END public function GetCommandParameters
 	/**
 	 * Generate commands string for AjaxRequest request
 	 *
@@ -372,30 +373,30 @@ HTML;
      * @param      $commands
      * @param int  $loader
      * @param null $confirm
-     * @param null $js_script
+     * @param null $jsScript
      * @param int  $async
-     * @param int  $run_oninit_event
-     * @param null $post_params
-     * @param null $class_file
-     * @param null $class_name
+     * @param int  $runOnInitEvent
+     * @param null $postParams
+     * @param null $classFile
+     * @param null $className
      * @param null $interval
      * @param null $callback
      * @return string
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function Prepare($commands,$loader = 1,$confirm = NULL,$js_script = NULL,$async = 1,$run_oninit_event = 1,$post_params = NULL,$class_file = NULL,$class_name = NULL,$interval = NULL,$callback = NULL) {
-		$app_params_encrypt = AppConfig::GetValue('app_params_encrypt');
+	public function Prepare($commands,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL,$interval = NULL,$callback = NULL) {
+		$paramsEncrypt = AppConfig::GetValue('app_params_encrypt');
 		$commands = self::TrimExplode(';',$commands);
-		$all_commands = '';
+		$allCommands = '';
 		foreach($commands as $command) {
 			$command = str_replace('\\','\\\\',$command);
 			$functions = '';
 			$targets = '';
-			$eparams = '';
-			$jparams = '';
+			$eParams = '';
+			$jParams = '';
 			if(strpos($command,'-<')!==FALSE) {
-				$jparams = '{ ';
+				$jParams = '{ ';
 				foreach(self::TrimExplode('-<',$command) as $k=>$v) {
 					switch($k) {
 						case 0:
@@ -403,16 +404,16 @@ HTML;
 							break;
 						case 1:
 						default:
-							$jparams .= ($k>1 ? ',' : '').trim($v).':'.trim($v);
+							$jParams .= ($k>1 ? $this->paramsSeparator : '').trim($v).':'.trim($v);
 							break;
 					}//END switch
 				}//END foreach
-				$jparams .= ' }';
+				$jParams .= ' }';
 			}//if(strpos($command,'-<')!==FALSE)
 			$tmp = self::TrimExplode('->',$command);
 			if(isset($tmp[0])) { $functions = trim($tmp[0]); }
 			if(isset($tmp[1])) { $targets = trim($tmp[1]); }
-			if(isset($tmp[2])) { $eparams = trim($tmp[2]); }
+			if(isset($tmp[2])) { $eParams = trim($tmp[2]); }
 			if(strstr($functions,'(')) {
 				$action = '';
 				$target = '';
@@ -431,41 +432,39 @@ HTML;
 				if(!$targetProperty) { $targetProperty = 'innerHTML'; }
 				if(!$targets) { $action = $targetProperty = $targetId = ''; }
 				if($function) {
-					$request_id = AppSession::GetNewUID($function.$this->app_req_id,'sha256',TRUE);
-					if($class_file || $class_name) {
-						$class_file = strlen($class_file) ? $class_file : AppConfig::GetValue('ajax_class_file');
-						$class_name = strlen($class_name) ? $class_name : AppConfig::GetValue('ajax_class_name');
-						$req_sess_params = [
-							AppSession::ConvertToSessionCase('METHOD',self::$session_keys_case)=>$function,
-							AppSession::ConvertToSessionCase('CLASS_FILE',self::$session_keys_case)=>$class_file,
-							AppSession::ConvertToSessionCase('CLASS',self::$session_keys_case)=>$class_name,
+					$requestId = AppSession::GetNewUID($function.$this->requestId,'sha256',TRUE);
+					if($classFile || $className) {
+						$classFile = strlen($classFile) ? $classFile : AppConfig::GetValue('ajax_class_file');
+						$className = strlen($className) ? $className : AppConfig::GetValue('ajax_class_name');
+						$reqSessionParams = [
+							AppSession::ConvertToSessionCase('METHOD',self::$sessionKeysCase)=>$function,
+							AppSession::ConvertToSessionCase('CLASS_FILE',self::$sessionKeysCase)=>$classFile,
+							AppSession::ConvertToSessionCase('CLASS',self::$sessionKeysCase)=>$className,
 						];
 					} else {
-						$req_sess_params = [AppSession::ConvertToSessionCase('METHOD',self::$session_keys_case)=>$function];
+						$reqSessionParams = [AppSession::ConvertToSessionCase('METHOD',self::$sessionKeysCase)=>$function];
 					}//if($class_file || $class_name || $this->custom_class)
-					$subsession = is_array($this->subsession) ? $this->subsession : array($this->subsession);
-					$subsession[] = AppSession::ConvertToSessionCase('NAPP_AREQUEST',self::$session_keys_case);
-					$subsession[] = AppSession::ConvertToSessionCase('AREQUESTS',self::$session_keys_case);
-					AppSession::SetGlobalParam(AppSession::ConvertToSessionCase($request_id,self::$session_keys_case),$req_sess_params,FALSE,$subsession,FALSE);
-					$session_id = rawurlencode(\GibberishAES::enc(session_id(),AppConfig::GetValue('app_encryption_key')));
-					$postparams = $this->PreparePostParams($post_params);
-					$args_separators = [$this->app_params_sep,$this->app_arr_params_sep,$this->app_arr_key_sep];
-					$phash = AppConfig::GetValue('app_use_window_name') ? "'+ARequest.get(window.name)+'".self::$app_arg_sep : '';
-					$jsarguments = $app_params_encrypt ? \GibberishAES::enc($phash.$this->ParseArguments($args,$args_separators),$request_id) : $phash.$this->ParseArguments($args,$args_separators);
-					$pconfirm = $this->PrepareConfirm($confirm,$request_id);
-					$jcallback = strlen($callback) ? $callback : '';
-					if(strlen($jcallback) && $app_params_encrypt) {
-						$jcallback = \GibberishAES::enc($jcallback,$request_id);
-					}//if(strlen($callback) && $app_params_encrypt)
+					$subSession = is_array($this->subSession) ? $this->subSession : array($this->subSession);
+					$subSession[] = AppSession::ConvertToSessionCase('NAPP_AREQUEST',self::$sessionKeysCase);
+					$subSession[] = AppSession::ConvertToSessionCase('AREQUESTS',self::$sessionKeysCase);
+					AppSession::SetGlobalParam(AppSession::ConvertToSessionCase($requestId,self::$sessionKeysCase),$reqSessionParams,FALSE,$subSession,FALSE);
+					$sessionId = rawurlencode(\GibberishAES::enc(session_id(),AppConfig::GetValue('app_encryption_key')));
+					$postParams = $this->PreparePostParams($postParams);
+					$argsSeparators = [$this->paramsSeparator,$this->arrayParamsSeparator,$this->arrayKeySeparator];
+					$phash = AppConfig::GetValue('app_use_window_name') ? "'+ARequest.get(window.name)+'".self::$argumentSeparator : '';
+					$jsArguments = $paramsEncrypt ? \GibberishAES::enc($phash.$this->ParseArguments($args,$argsSeparators),$requestId) : $phash.$this->ParseArguments($args,$argsSeparators);
+					$pConfirm = $this->PrepareConfirm($confirm,$requestId);
+					$jsCallback = strlen($callback) ? $callback : '';
+					if(strlen($jsCallback) && $paramsEncrypt) { $jsCallback = \GibberishAES::enc($jsCallback,$requestId); }
 					if(is_numeric($interval) && $interval>0) {
-						$all_commands .= "ARequest.runRepeated({$interval},'".str_replace("'","\\'",$jsarguments)."',".((int)$app_params_encrypt).",'{$targetId}','{$action}','{$targetProperty}','{$session_id}','{$request_id}','{$postparams}',{$loader},'{$async}','{$js_script}',{$pconfirm},".(strlen($jparams) ? $jparams : 'undefined').",".(strlen($jcallback) ? $jcallback : 'false').",".($run_oninit_event==1 ? 1 : 0).','.(strlen($eparams) ? $eparams : 'undefined').");";
+						$allCommands .= "ARequest.runRepeated({$interval},'".str_replace("'","\\'",$jsArguments)."',".((int)$paramsEncrypt).",'{$targetId}','{$action}','{$targetProperty}','{$sessionId}','{$requestId}','{$postParams}',{$loader},'{$async}','{$jsScript}',{$pConfirm},".(strlen($jParams) ? $jParams : 'undefined').",".(strlen($jsCallback) ? $jsCallback : 'false').",".($runOnInitEvent==1 ? 1 : 0).','.(strlen($eParams) ? $eParams : 'undefined').");";
 					} else {
-						$all_commands .= 'ARequest.run('."'{$jsarguments}',".((int)$app_params_encrypt).",'{$targetId}','{$action}','{$targetProperty}','{$session_id}','{$request_id}','{$postparams}',{$loader},'{$async}','{$js_script}',{$pconfirm},".(strlen($jparams) ? $jparams : 'undefined').",".(strlen($jcallback) ? $jcallback : 'false').",".($run_oninit_event==1 ? 1 : 0).','.(strlen($eparams) ? $eparams : 'undefined').");";
+						$allCommands .= 'ARequest.run('."'{$jsArguments}',".((int)$paramsEncrypt).",'{$targetId}','{$action}','{$targetProperty}','{$sessionId}','{$requestId}','{$postParams}',{$loader},'{$async}','{$jsScript}',{$pConfirm},".(strlen($jParams) ? $jParams : 'undefined').",".(strlen($jsCallback) ? $jsCallback : 'false').",".($runOnInitEvent==1 ? 1 : 0).','.(strlen($eParams) ? $eParams : 'undefined').");";
 					}//if(is_numeric($interval) && $interval>0)
 				}//if($function)
 			}//if(strstr($functions,'('))
 		}//foreach($commands as $command)
-		return $all_commands;
+		return $allCommands;
 	}//END public function Prepare
     /**
      * Generate javascript call for ajax request (with callback)
@@ -475,18 +474,18 @@ HTML;
      * @param      $callback
      * @param int  $loader
      * @param null $confirm
-     * @param null $js_script
+     * @param null $jsScript
      * @param int  $async
-     * @param int  $run_oninit_event
-     * @param null $post_params
-     * @param null $class_file
-     * @param null $class_name
+     * @param int  $runOnInitEvent
+     * @param null $postParams
+     * @param null $classFile
+     * @param null $className
      * @return string
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function PrepareWithCallback($commands,$callback,$loader = 1,$confirm = NULL,$js_script = NULL,$async = 1,$run_oninit_event = 1,$post_params = NULL,$class_file = NULL,$class_name = NULL) {
-		return $this->Prepare($commands,$loader,$confirm,$js_script,$async,$run_oninit_event,$post_params,$class_file,$class_name,NULL,$callback);
+	public function PrepareWithCallback($commands,$callback,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
+		return $this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,NULL,$callback);
 	}//END public function PrepareWithCallback
     /**
      * Generate javascript call for repeated ajax request
@@ -494,19 +493,19 @@ HTML;
      * @param        $interval
      * @param        $commands
      * @param int    $loader
-     * @param string $js_script
+     * @param null   $jsScript
      * @param int    $async
-     * @param int    $run_oninit_event
+     * @param int    $runOnInitEvent
      * @param null   $confirm
-     * @param null   $post_params
-     * @param null   $class_file
-     * @param null   $class_name
+     * @param null   $postParams
+     * @param null   $classFile
+     * @param null   $className
      * @return string
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function PrepareRepeated($interval,$commands,$loader = 1,$js_script = '',$async = 1,$run_oninit_event = 1,$confirm = NULL,$post_params = NULL,$class_file = NULL,$class_name = NULL) {
-		return $this->Prepare($commands,$loader,$confirm,$js_script,$async,$run_oninit_event,$post_params,$class_file,$class_name,$interval,NULL);
+	public function PrepareRepeated($interval,$commands,$loader = 1,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$confirm = NULL,$postParams = NULL,$classFile = NULL,$className = NULL) {
+		return $this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,$interval,NULL);
 	}//END public function PrepareRepeated
     /**
      * Adds a new paf run action to the queue
@@ -514,18 +513,18 @@ HTML;
      * @param      $commands
      * @param int  $loader
      * @param null $confirm
-     * @param null $js_script
+     * @param null $jsScript
      * @param int  $async
-     * @param int  $run_oninit_event
-     * @param null $post_params
-     * @param null $class_file
-     * @param null $class_name
+     * @param int  $runOnInitEvent
+     * @param null $postParams
+     * @param null $classFile
+     * @param null $className
      * @return void
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function Execute($commands,$loader = 1,$confirm = NULL,$js_script = NULL,$async = 1,$run_oninit_event = 1,$post_params = NULL,$class_file = NULL,$class_name = NULL) {
-		$this->AddAction($this->Prepare($commands,$loader,$confirm,$js_script,$async,$run_oninit_event,$post_params,$class_file,$class_name,NULL,NULL));
+	public function Execute($commands,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
+		$this->AddAction($this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,NULL,NULL));
 	}//END public function Execute
     /**
      * Adds a new paf run action to the queue (with callback)
@@ -534,18 +533,18 @@ HTML;
      * @param      $callback
      * @param int  $loader
      * @param null $confirm
-     * @param null $js_script
+     * @param null $jsScript
      * @param int  $async
-     * @param int  $run_oninit_event
-     * @param null $post_params
-     * @param null $class_file
-     * @param null $class_name
+     * @param int  $runOnInitEvent
+     * @param null $postParams
+     * @param null $classFile
+     * @param null $className
      * @return void
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function ExecuteWithCallback($commands,$callback,$loader = 1,$confirm = NULL,$js_script = NULL,$async = 1,$run_oninit_event = 1,$post_params = NULL,$class_file = NULL,$class_name = NULL) {
-		$this->AddAction($this->Prepare($commands,$loader,$confirm,$js_script,$async,$run_oninit_event,$post_params,$class_file,$class_name,NULL,$callback));
+	public function ExecuteWithCallback($commands,$callback,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
+		$this->AddAction($this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,NULL,$callback));
 	}//END public function ExecuteWithCallback
     /**
      * Generate and execute javascript for AjaxRequest request
@@ -553,18 +552,18 @@ HTML;
      * @param array $params Parameters object (instance of [Params])
      * @param int   $loader
      * @param null  $confirm
-     * @param null  $js_script
+     * @param null  $jsScript
      * @param int   $async
-     * @param int   $run_oninit_event
-     * @param null  $post_params
-     * @param null  $class_file
-     * @param null  $class_name
+     * @param int   $runOnInitEvent
+     * @param null  $postParams
+     * @param null  $classFile
+     * @param null  $className
      * @return void
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function ExecuteAjaxRequest($params = [],$loader = 1,$confirm = NULL,$js_script = NULL,$async = 1,$run_oninit_event = 1,$post_params = NULL,$class_file = NULL,$class_name = NULL) {
-		$this->AddAction($this->PrepareAjaxRequest($params,$loader,$confirm,$js_script,$async,$run_oninit_event,$post_params,$class_file,$class_name));
+	public function ExecuteAjaxRequest($params = [],$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
+		$this->AddAction($this->PrepareAjaxRequest($params,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className));
 	}//END public function ExecuteAjaxRequest
     /**
      * Generate javascript for AjaxRequest request
@@ -573,19 +572,19 @@ HTML;
      * @param null  $callback
      * @param int   $loader
      * @param null  $confirm
-     * @param null  $js_script
+     * @param null  $jsScript
      * @param int   $async
-     * @param int   $run_oninit_event
-     * @param null  $post_params
-     * @param null  $class_file
-     * @param null  $class_name
+     * @param int   $runOnInitEvent
+     * @param null  $postParams
+     * @param null  $classFile
+     * @param null  $className
      * @param null  $interval
      * @return string
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function PrepareAjaxRequestWithCallback($params = [],$callback = NULL,$loader = 1,$confirm = NULL,$js_script = NULL,$async = 1,$run_oninit_event = 1,$post_params = NULL,$class_file = NULL,$class_name = NULL,$interval = NULL) {
-		return $this->PrepareAjaxRequest($params,$loader,$confirm,$js_script,$async,$run_oninit_event,$post_params,$class_file,$class_name,$interval,$callback);
+	public function PrepareAjaxRequestWithCallback($params = [],$callback = NULL,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL,$interval = NULL) {
+		return $this->PrepareAjaxRequest($params,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,$interval,$callback);
 	}//END public function PrepareAjaxRequestWithCallback
     /**
      * Generate javascript for AjaxRequest request
@@ -593,23 +592,23 @@ HTML;
      * @param array $params Parameters object (instance of [Params])
      * @param int   $loader
      * @param null  $confirm
-     * @param null  $js_script
+     * @param null  $jsScript
      * @param int   $async
-     * @param int   $run_oninit_event
-     * @param null  $post_params
-     * @param null  $class_file
-     * @param null  $class_name
+     * @param int   $runOnInitEvent
+     * @param null  $postParams
+     * @param null  $classFile
+     * @param null  $className
      * @param null  $interval
      * @param null  $callback
      * @return string
-     * @access public
      * @throws \NETopes\Core\AppException
+     * @access public
      */
-	public function PrepareAjaxRequest($params = [],$loader = 1,$confirm = NULL,$js_script = NULL,$async = 1,$run_oninit_event = 1,$post_params = NULL,$class_file = NULL,$class_name = NULL,$interval = NULL,$callback = NULL) {
+	public function PrepareAjaxRequest($params = [],$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL,$interval = NULL,$callback = NULL) {
 		if(!is_array($params) || !count($params)) { return NULL; }
 		$commands = $this->GetCommands($params);
 		if(!strlen($commands)) { return NULL; }
-		return $this->Prepare($commands,$loader,$confirm,$js_script,$async,$run_oninit_event,$post_params,$class_file,$class_name,$interval,$callback);
+		return $this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,$interval,$callback);
 	}//END public function PrepareAjaxRequest
 	/**
 	 * @param $args
@@ -658,11 +657,11 @@ HTML;
 	}//END private function PrepareArgument
     /**
      * @param $confirm
-     * @param $request_id
+     * @param $requestId
      * @return mixed|string
      * @throws \NETopes\Core\AppException
      */
-	private function PrepareConfirm($confirm,$request_id) {
+	private function PrepareConfirm($confirm,$requestId) {
 		if(is_string($confirm)) {
 			$ctxt = $confirm;
 			$ctype = 'js';
@@ -673,27 +672,26 @@ HTML;
 		if(!strlen($ctxt)) { return 'undefined'; }
 		switch($ctype) {
 			case 'jqui':
-				$confirm_str = str_replace('"',"'",json_encode(array(
+				$confirmStr = str_replace('"',"'",json_encode(array(
 					'type'=>'jqui',
 					'message'=>rawurlencode($ctxt),
 					'title'=>get_array_value($confirm,'title','','is_string'),
 					'ok'=>get_array_value($confirm,'ok','','is_string'),
 					'cancel'=>get_array_value($confirm,'cancel','','is_string'),
 				)));
-				if(AppConfig::GetValue('app_params_encrypt')) { $confirm_str = "'".\GibberishAES::enc($confirm_str,$request_id)."'"; }
-				// return 'undefined';
+				if(AppConfig::GetValue('app_params_encrypt')) { $confirmStr = "'".\GibberishAES::enc($confirmStr,$requestId)."'"; }
 				break;
 			case 'js':
 			default:
 				if(AppConfig::GetValue('app_params_encrypt')) {
-					$confirm_str = str_replace('"',"'",json_encode(array('type'=>'std','message'=>rawurlencode($ctxt))));
-					$confirm_str = "'".\GibberishAES::enc($confirm_str,$request_id)."'";
+					$confirmStr = str_replace('"',"'",json_encode(array('type'=>'std','message'=>rawurlencode($ctxt))));
+					$confirmStr = "'".\GibberishAES::enc($confirmStr,$requestId)."'";
 				} else {
-					$confirm_str = "'".rawurlencode($ctxt)."'";
+					$confirmStr = "'".rawurlencode($ctxt)."'";
 				}//if(AppConfig::GetValue('app_params_encrypt'))
 				break;
 		}//END switch
-		return $confirm_str;
+		return $confirmStr;
 	}//END private function PrepareConfirm
 	/**
 	 * Transforms the post params array into a string to be posted by the javascript method
@@ -704,8 +702,8 @@ HTML;
 	 */
 	private function PreparePostParams($params = NULL) {
 		$result = '';
-		if(is_array($this->post_params) && count($this->post_params)) {
-			foreach($this->post_params as $k=>$v) { $result .= '&'.$k.'='.$v; }
+		if(is_array($this->postParams) && count($this->postParams)) {
+			foreach($this->postParams as $k=>$v) { $result .= '&'.$k.'='.$v; }
 		}//if(is_array($this->aapp_post_params) && count($this->aapp_post_params))
 		if(is_array($params) && count($params)) {
 			foreach($params as $k=>$v) { $result .= '&'.$k.'='.$v; }
@@ -716,24 +714,24 @@ HTML;
 	 * @param $action
 	 */
 	private function AddAction($action) {
-		$this->request_actions[] = $action;
+		$this->requestActions[] = $action;
 	}//private function AddAction
 	/**
 	 * @return null|string
 	 */
 	public function GetActions() {
 		if(!$this->HasActions()) { return NULL; }
-		$actions = implode(';',array_map(function($value){return trim($value,';');},$this->request_actions)).';';
-		return self::$app_act_sep.$actions.self::$app_act_sep;
+		$actions = implode(';',array_map(function($value){return trim($value,';');},$this->requestActions)).';';
+		return self::$actionSeparator.$actions.self::$actionSeparator;
 	}//END public function GetActions
 /*** NETopes js response functions ***/
 	/**
 	 * Execute javascript code
 	 *
-	 * @param $jscript
+	 * @param $jsScript
 	 */
-	public function ExecuteJs($jscript) {
-		if(is_string($jscript) && strlen($jscript)) { $this->AddAction($jscript); }
+	public function ExecuteJs($jsScript) {
+		if(is_string($jsScript) && strlen($jsScript)) { $this->AddAction($jsScript); }
 	}//END public function ExecuteJs
 	/**
 	 * Redirect the browser to a URL
@@ -763,7 +761,7 @@ HTML;
 	 * @param $form
 	 */
 	public function Submit($form) {
-		$this->AddAction("document.forms['$form'].submit()");
+		$this->AddAction("document.forms['{$form}'].submit()");
 	}//END public function Submit
 	/**
 	 * Used for placing complex/long text into an element (text or html)
@@ -784,7 +782,7 @@ HTML;
 		if(count($target_arr2)>1) { $targetProperty = $target_arr2[1]; }
 		if(!$action) { $action = 'r'; }
 		if(!$targetProperty) { $targetProperty = 'innerHTML'; }
-		$action = "ARequest.put(decodeURIComponent('".rawurlencode($content)."'),'$targetId','$action','$targetProperty')";
+		$action = "ARequest.put(decodeURIComponent('".rawurlencode($content)."'),'{$targetId}','{$action}','{$targetProperty}')";
 		$this->AddAction($action);
 	}//END public function InnerHtml
 	/**
@@ -795,7 +793,7 @@ HTML;
 	 * @access public
 	 */
 	public function Hide($element) {
-		$this->AddAction("ARequest.put('none','$element','r','style.display')");
+		$this->AddAction("ARequest.put('none','{$element}','r','style.display')");
 	}//END public function Hide
 	/**
 	 * Shows an element (sets css display property to '')
@@ -805,7 +803,7 @@ HTML;
 	 * @access public
 	 */
 	public function Show($element) {
-		$this->AddAction("ARequest.put('','$element','r','style.display')");
+		$this->AddAction("ARequest.put('','{$element}','r','style.display')");
 	}//END public function Show
 	/**
 	 * Set style for an element
@@ -816,7 +814,7 @@ HTML;
 	 * @access public
 	 */
 	public function Style($element,$styleString) {
-		$this->AddAction("ARequest.setStyle('$element', '$styleString')");
+		$this->AddAction("ARequest.setStyle('{$element}','{$styleString}')");
 	}//END public function Style
 	/**
 	 * Return response actions to javascript for execution and clears actions property
@@ -826,7 +824,7 @@ HTML;
 	 */
 	public function Send() {
 		$actions = $this->GetActions();
-		$this->request_actions = [];
+		$this->requestActions = [];
 		return $actions;
 	}//END public function Send
 //END NETopes js response functions
@@ -842,17 +840,17 @@ HTML;
 		//decode encrypted HTTP data if needed
 		$args = utf8_decode(rawurldecode($args));
 		if(AppConfig::GetValue('app_secure_http')) {
-			if(!$this->app_req_key) { echo "ARequest ERROR: [{$function}] Not validated."; }
-			$args = \GibberishAES::dec($args,$this->app_req_key);
+			if(!$this->requestKey) { echo "ARequest ERROR: [{$function}] Not validated."; }
+			$args = \GibberishAES::dec($args,$this->requestKey);
 		}//if(AppConfig::GetValue('app_secure_http'))
 		//limited to 100 arguments for DNOS attack protection
-		$args = explode(self::$app_arg_sep,$args,100);
+		$args = explode(self::$argumentSeparator,$args,100);
 		for($i=0; $i<count($args); $i++) {
-			$args[$i] = $this->Utf8Unserialize(rawurldecode($args[$i]));
-			$args[$i] = str_replace(self::$app_act_sep,'',$args[$i]);
+			$args[$i] = $this->Utf8UnSerialize(rawurldecode($args[$i]));
+			$args[$i] = str_replace(self::$argumentSeparator,'',$args[$i]);
 		}//END for
 		if(method_exists($this,$function)) {
-			echo call_user_func_array(array($this,$function),$args);
+			echo call_user_func_array([$this,$function],$args);
 		} else {
 			echo "ARequest ERROR: [{$function}] Not validated.";
 		}//if(method_exists($this,$function))
@@ -861,7 +859,7 @@ HTML;
 	 * @param $str
 	 * @return array|null|string|string[]
 	 */
-	private function Utf8Unserialize($str) {
+	private function Utf8UnSerialize($str) {
 		$rsearch = array('^[!]^','^[^]^');
 		$rreplace = array('|','~');
 		if(strpos(trim($str,'|'),'|')===FALSE && strpos(trim($str,'~'),'~')===FALSE) { return $this->ArrayNormalize(str_replace($rsearch,$rreplace,unserialize($str))); }
@@ -886,7 +884,7 @@ HTML;
 			}//if(count($sarg)>1)
 		}//END foreach
 		return $ret;
-	}//END private function Utf8Unserialize
+	}//END private function Utf8UnSerialize
 	/**
 	 * @param      $arr
 	 * @param null $val
