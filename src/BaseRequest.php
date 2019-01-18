@@ -8,7 +8,7 @@
  * @author     George Benjamin-Schonberger
  * @copyright  Copyright (c) 2013 - 2019 AdeoTEK Software SRL
  * @license    LICENSE.md
- * @version    1.0.0.0
+ * @version    1.1.0.0
  * @filesource
  */
 namespace NETopes\Ajax;
@@ -443,7 +443,7 @@ HTML;
 						];
 					} else {
 						$reqSessionParams = [AppSession::ConvertToSessionCase('METHOD',self::$sessionKeysCase)=>$function];
-					}//if($class_file || $class_name || $this->custom_class)
+					}//if($classFile || $className || $this->customClass)
 					$subSession = is_array($this->subSession) ? $this->subSession : array($this->subSession);
 					$subSession[] = AppSession::ConvertToSessionCase('NAPP_AREQUEST',self::$sessionKeysCase);
 					$subSession[] = AppSession::ConvertToSessionCase('AREQUESTS',self::$sessionKeysCase);

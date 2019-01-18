@@ -6,7 +6,7 @@
  * License    LICENSE.md
  *
  * @author     George Benjamin-Schonberger
- * @version    1.0.0.0
+ * @version    1.1.0.0
  */
 
 const ARequest = {
