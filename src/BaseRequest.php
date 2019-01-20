@@ -12,7 +12,9 @@
  * @filesource
  */
 namespace NETopes\Ajax;
+use ErrorHandler;
 use NETopes\Core\AppConfig;
+use NETopes\Core\AppException;
 use NETopes\Core\AppSession;
 use NApp;
 
@@ -23,11 +25,6 @@ use NApp;
  * @access   public
  */
 abstract class BaseRequest {
-	/**
-	 * @var    \NETopes\Core\App\IApp Reference to the App object (for interacting with session data)
-	 * @access protected
-	 */
-	protected $app = NULL;
 	/**
 	 * @var    string Session sub-array key for storing ARequest data
 	 * @access protected
@@ -98,20 +95,19 @@ abstract class BaseRequest {
      * @throws \NETopes\Core\AppException
      */
 	public static function PrepareAndExecuteRequest(array $postParams = [],$subSession = NULL) {
-	    /** @var \NETopes\Core\App\App $app */
 		$errors = '';
 		$request = array_key_exists('req',$_POST) ? $_POST['req'] : NULL;
 		if(!$request) { $errors .= 'Empty Request!'; }
 		$php = NULL;
-		$session_id = NULL;
+		$sessionId = NULL;
 		$request_id = NULL;
-		$class_file = NULL;
+		$classFile = NULL;
 		$class = NULL;
 		$function = NULL;
 		$requests = NULL;
 		if(!$errors) {
 			/* Start session and set ID to the expected paf session */
-			list($php,$session_id,$request_id) = explode(static::$requestSeparator,$request);
+			list($php,$sessionId,$request_id) = explode(static::$requestSeparator,$request);
 			/* Validate this request */
 			$spath = [
 			    NApp::$currentNamespace,
@@ -119,11 +115,11 @@ abstract class BaseRequest {
 				AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$sessionKeysCase),
 			];
 			$requests = AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('AREQUESTS',static::$sessionKeysCase),FALSE,$spath,FALSE);
-			if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests)) {
+			if(\GibberishAES::dec(rawurldecode($sessionId),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests)) {
 				$errors .= 'Invalid Request!';
 			} elseif(!in_array(AppSession::ConvertToSessionCase($request_id,static::$sessionKeysCase),array_keys($requests))) {
 				$errors .= 'Invalid Request Data!';
-			}//if(\GibberishAES::dec(rawurldecode($session_id),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests))
+			}//if(\GibberishAES::dec(rawurldecode($sessionId),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests))
 		}//if(!$errors)
 		if(!$errors) {
 			/* Get function name and process file */
@@ -134,35 +130,40 @@ abstract class BaseRequest {
 			if(!class_exists($class)) {
 			    $lkey = AppSession::ConvertToSessionCase('CLASS_FILE',static::$sessionKeysCase);
                 if(array_key_exists($lkey,$REQ) && isset($REQ[$lkey])) {
-                    $class_file = $REQ[$lkey];
+                    $classFile = $REQ[$lkey];
                 } else {
                     $app_class_file = AppConfig::GetValue('ajax_class_file');
-                    $class_file = $app_class_file ? NApp::$appPath.$app_class_file : '';
+                    $classFile = $app_class_file ? NApp::$appPath.$app_class_file : '';
                 }//if(array_key_exists($lkey,$REQ) && isset($REQ[$lkey]))
-                if(strlen($class_file)) {
-                    if(file_exists($class_file)) {
-                        require($class_file);
+                if(strlen($classFile)) {
+                    if(file_exists($classFile)) {
+                        require($classFile);
                     } else {
-                        $errors = 'Class file ['.$class_file.'] not found!';
-                    }//if(file_exists($class_file))
-                }//if(strlen($class_file))
+                        $errors = 'Class file ['.$classFile.'] not found!';
+                    }//if(file_exists($classFile))
+                }//if(strlen($classFile))
 			}//if(!class_exists($class))
 			if(!$errors) {
-			    $ajaxRequest = new $class($subSession,$postParams);
+			    NApp::SetAjaxRequest(new $class($subSession,$postParams));
 			    /* Execute the requested function */
-			    $ajaxRequest->ExecuteRequest($method,$php);
-			    NApp::SetAjaxRequest($ajaxRequest);
-				NApp::SessionCommit(NULL,TRUE);
-				if($ajaxRequest->HasActions()) { echo $ajaxRequest->Send(); }
+			    try {
+			    	NApp::Ajax()->ExecuteRequest($method,$php);
+				} catch(\Error $er) {
+            		NApp::Elog($er);
+			    } catch(AppException $e) {
+			        NApp::Elog($e);
+			    }//END try
+				NApp::SessionCommit(FALSE,TRUE);
+				if(NApp::Ajax()->HasActions()) { echo NApp::Ajax()->Send(); }
 				$content = NApp::GetOutputBufferContent();
 			} else {
 				$content = $errors;
 			}//if(!$errors)
 			echo $content;
 		} else {
-			$app::Log2File(['type'=>'error','message'=>$errors,'no'=>-1,'file'=>__FILE__,'line'=>__LINE__],NApp::$appPath.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('errors_log_file'));
+			NApp::Log2File(['type'=>'error','message'=>$errors,'no'=>-1,'file'=>__FILE__,'line'=>__LINE__],NApp::$appPath.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('errors_log_file'));
 			// vprint($errors);
-			echo static::$actionSeparator.'window.location.href = "'.$app::GetAppBaseUrl().'";';
+			echo static::$actionSeparator.'window.location.href = "'.NApp::GetAppBaseUrl().'";';
 		}//if(!$errors)
 	}//END public static function PrepareAndExecuteRequest
     /**
@@ -174,7 +175,6 @@ abstract class BaseRequest {
      * @throws \NETopes\Core\AppException
      */
 	public final function __construct($subSession = NULL,?array $postParams = []) {
-		$this->app = &$app;
 		if(is_string($subSession) && strlen($subSession)) {
 			$this->subSession = array($subSession,AppConfig::GetValue('app_session_key'));
 		} elseif(is_array($subSession) && count($subSession)) {
@@ -309,6 +309,30 @@ HTML;
 		return $js;
 	}//END public function JsInit
 	/**
+     * @param $function
+     * @param $args
+     * @return void
+     * @throws \NETopes\Core\AppException
+     */
+	public function ExecuteRequest($function,$args) {
+		//Kill magic quotes if they are on
+		if(get_magic_quotes_gpc()) { $args = stripslashes($args); }
+		//decode encrypted HTTP data if needed
+		$args = utf8_decode(rawurldecode($args));
+		if(AppConfig::GetValue('app_secure_http')) {
+			if(!$this->requestKey) { echo "ARequest ERROR: [{$function}] Not validated."; }
+			$args = \GibberishAES::dec($args,$this->requestKey);
+		}//if(AppConfig::GetValue('app_secure_http'))
+		//limited to 100 arguments for DNOS attack protection
+		$args = explode(self::$argumentSeparator,$args,100);
+		for($i=0; $i<count($args); $i++) {
+			$args[$i] = $this->Utf8UnSerialize(rawurldecode($args[$i]));
+			$args[$i] = str_replace(self::$argumentSeparator,'',$args[$i]);
+		}//END for
+		if(method_exists($this,$function)) { return call_user_func_array([$this,$function],$args); }
+		echo "ARequest ERROR: [{$function}] Not validated.";
+	}//END public function ExecuteRequest
+	/**
 	 * Generate command parameters string for AjaxRequest request
 	 *
 	 * @param      $val
@@ -360,7 +384,7 @@ HTML;
 			$ptarget = NULL;
 		}//if(array_key_exists('target',$lparams))
 		$parameters = $this->GetCommandParameters($lparams);
-		// $this->app->Dlog($parameters,'$parameters');
+		// NApp::Dlog($parameters,'$parameters');
 		if(strlen($parameters)) { $commands .= ','.$parameters; }
 		if(strlen($ptarget)) { $commands .= (strlen($parameters) ? '' : ",''").",'{$ptarget}'"; }
 		$commands .= ")".(strlen($target) ? '->'.$target : '');
@@ -622,7 +646,7 @@ HTML;
 		$separators = is_string($separators) ? array($separators) : $separators;
 		if(is_array($separators)) {
 			$separator = array_shift($separators);
-			$prefix = $separator==$this->app_params_sep ? self::$app_arg_sep : "'+'".$separator;
+			$prefix = $separator==$this->paramsSeparator ? self::$argumentSeparator : "'+'".$separator;
 			foreach(self::TrimExplode($separator,$args) as $v) {
 				$inner .= $inner ? $prefix : '';
 				if(self::StringContains($v,$separators)) {
@@ -828,33 +852,6 @@ HTML;
 		return $actions;
 	}//END public function Send
 //END NETopes js response functions
-    /**
-     * @param $function
-     * @param $args
-     * @return void
-     * @throws \NETopes\Core\AppException
-     */
-	public function ExecuteRequest($function,$args) {
-		//Kill magic quotes if they are on
-		if(get_magic_quotes_gpc()) { $args = stripslashes($args); }
-		//decode encrypted HTTP data if needed
-		$args = utf8_decode(rawurldecode($args));
-		if(AppConfig::GetValue('app_secure_http')) {
-			if(!$this->requestKey) { echo "ARequest ERROR: [{$function}] Not validated."; }
-			$args = \GibberishAES::dec($args,$this->requestKey);
-		}//if(AppConfig::GetValue('app_secure_http'))
-		//limited to 100 arguments for DNOS attack protection
-		$args = explode(self::$argumentSeparator,$args,100);
-		for($i=0; $i<count($args); $i++) {
-			$args[$i] = $this->Utf8UnSerialize(rawurldecode($args[$i]));
-			$args[$i] = str_replace(self::$argumentSeparator,'',$args[$i]);
-		}//END for
-		if(method_exists($this,$function)) {
-			echo call_user_func_array([$this,$function],$args);
-		} else {
-			echo "ARequest ERROR: [{$function}] Not validated.";
-		}//if(method_exists($this,$function))
-	}//END public function ExecuteRequest
 	/**
 	 * @param $str
 	 * @return array|null|string|string[]

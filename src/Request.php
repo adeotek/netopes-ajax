@@ -38,10 +38,10 @@ class Request extends BaseRequest {
 	 * @param int    $resetSessionParams
 	 * @return void
 	 * @access public
-	 * @throws \NETopes\Core\AppException
-	 */
+     */
 	public function AjaxRequest($windowName,$module,$method,$params = NULL,$target = NULL,$nonCustom = 0,$resetSessionParams = 0) {
 		if(!strlen($windowName)) { $this->ExecuteJs("window.name = '".NApp::GetPhash()."'"); }
+		$result = NULL;
 		try {
 			$olduserid = NApp::GetPageParam('user_id');
 			$userid = NApp::GetParam('user_id');
@@ -54,14 +54,19 @@ class Request extends BaseRequest {
 			$o_params->set('target',$target);
 			$o_params->set('phash',$windowName);
 			if($nonCustom) {
-				ModulesProvider::ExecNonCustom($module,$method,$o_params,NULL,(bool)$resetSessionParams);
+				$result = ModulesProvider::ExecNonCustom($module,$method,$o_params,NULL,(bool)$resetSessionParams);
 			} else {
-				ModulesProvider::Exec($module,$method,$o_params,NULL,(bool)$resetSessionParams);
+				$result = ModulesProvider::Exec($module,$method,$o_params,NULL,(bool)$resetSessionParams);
 			}//if($nonCustom)
 			if(strlen(AppConfig::GetValue('app_arequest_js_callback'))) { $this->ExecuteJs(AppConfig::GetValue('app_arequest_js_callback')); }
-		} catch(AppException $e) {
+		} catch(\Error $e) {
+		    $result = NULL;
 			\ErrorHandler::AddError($e);
+		} catch(AppException $ae) {
+		    $result = NULL;
+            \ErrorHandler::AddError($ae);
 		}//END try
+		return $result;
 	}//END public function AjaxRequest
 	/**
 	 * Generic ajax call for controls
@@ -73,8 +78,7 @@ class Request extends BaseRequest {
 	 * @param string $control
 	 * @param int    $viaPost
 	 * @return void
-	 * @throws \NETopes\Core\AppException
-	 * @access public
+     * @access public
 	 */
 	public function ControlAjaxRequest($window_name,$controlHash,$method,$params = NULL,$control = NULL,$viaPost = 0) {
 		if(!strlen($window_name)) { $this->ExecuteJs("window.name = '".NApp::GetPhash()."'"); }
@@ -100,8 +104,10 @@ class Request extends BaseRequest {
 			$o_params->set('output',TRUE);
 			$o_params->set('phash',$window_name);
 			$lcontrol->$method($o_params);
-		} catch(\Exception $e) {
+		} catch(\Error $e) {
 			\ErrorHandler::AddError($e);
+		} catch(AppException $ae) {
+            \ErrorHandler::AddError($ae);
 		}//END try
 	}//END public function ControlAjaxRequest
 	/**
