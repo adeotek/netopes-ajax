@@ -150,8 +150,10 @@ abstract class BaseRequest {
 			    	NApp::Ajax()->ExecuteRequest($method,$php);
 				} catch(\Error $er) {
             		NApp::Elog($er);
+            		ErrorHandler::AddError($er);
 			    } catch(AppException $e) {
 			        NApp::Elog($e);
+			        ErrorHandler::AddError($e);
 			    }//END try
 				NApp::SessionCommit(FALSE,TRUE);
 				if(NApp::Ajax()->HasActions()) { echo NApp::Ajax()->Send(); }
