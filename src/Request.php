@@ -1,9 +1,7 @@
 <?php
 /**
  * NETopes AJAX Request class file
- *
  * This class extends NETopes\Ajax\BaseRequest
- *
  * @package    NETopes\Ajax
  * @author     George Benjamin-Schonberger
  * @copyright  Copyright (c) 2013 - 2019 AdeoTEK Software SRL
@@ -21,14 +19,11 @@ use NApp;
 
 /**
  * Class Request
- *
  * @package  NETopes\Ajax
- * @access   public
  */
 class Request extends BaseRequest {
     /**
 	 * Generic ajax call
-	 *
 	 * @param        $windowName
 	 * @param        $module
 	 * @param        $method
@@ -37,7 +32,6 @@ class Request extends BaseRequest {
 	 * @param int    $nonCustom
 	 * @param int    $resetSessionParams
 	 * @return void
-	 * @access public
      */
 	public function AjaxRequest($windowName,$module,$method,$params = NULL,$target = NULL,$nonCustom = 0,$resetSessionParams = 0) {
 		if(!strlen($windowName)) { $this->ExecuteJs("window.name = '".NApp::GetPhash()."'"); }
@@ -70,7 +64,6 @@ class Request extends BaseRequest {
 	}//END public function AjaxRequest
 	/**
 	 * Generic ajax call for controls
-	 *
 	 * @param        $window_name
 	 * @param        $controlHash
 	 * @param        $method
@@ -78,7 +71,6 @@ class Request extends BaseRequest {
 	 * @param string $control
 	 * @param int    $viaPost
 	 * @return void
-     * @access public
 	 */
 	public function ControlAjaxRequest($window_name,$controlHash,$method,$params = NULL,$control = NULL,$viaPost = 0) {
 		if(!strlen($window_name)) { $this->ExecuteJs("window.name = '".NApp::GetPhash()."'"); }
@@ -112,10 +104,8 @@ class Request extends BaseRequest {
 	}//END public function ControlAjaxRequest
 	/**
 	 * Ajax call to set language
-	 *
 	 * @param $selectedLang
 	 * @return void
-	 * @access public
 	 */
 	public function SetLanguage(string $selectedLang) {
 		$alang = explode('^',$selectedLang);

@@ -1,9 +1,7 @@
 <?php
 /**
  * NETopes AJAX path class file
- *
  * The NETopes AJAX path class contains helper methods for application paths.
- *
  * @package    NETopes\Ajax
  * @author     George Benjamin-Schonberger
  * @copyright  Copyright (c) 2013 - 2019 AdeoTEK Software SRL
@@ -14,14 +12,11 @@
 namespace NETopes\Ajax;
 /**
  * Class AppPath
- *
  * @package  NETopes\Ajax
- * @access   public
  */
 class AppPath {
 	/**
 	 * Get NETopes AJAX path
-	 *
 	 * @return string
 	 */
 	public static function GetPath(): string {
@@ -29,7 +24,6 @@ class AppPath {
 	}//END public static function GetPath
 	/**
 	 * Get NETopes AJAX boot file
-	 *
 	 * @return string
 	 */
 	public static function GetBootFile(): string {

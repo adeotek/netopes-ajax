@@ -1,9 +1,7 @@
 <?php
 /**
  * NETopes AJAX requests class file.
- *
  * The NETopes class used for working with ajax requests.
- *
  * @package    NETopes\Ajax
  * @author     George Benjamin-Schonberger
  * @copyright  Copyright (c) 2013 - 2019 AdeoTEK Software SRL
@@ -20,78 +18,62 @@ use NApp;
 
 /**
  * Class Request
- *
  * @package  NETopes\Ajax
- * @access   public
  */
 abstract class BaseRequest {
 	/**
 	 * @var    string Session sub-array key for storing ARequest data
-	 * @access protected
 	 */
 	protected $subSession = NULL;
 	/**
 	 * @var    array Custom post params to be sent with the ajax request
-	 * @access protected
 	 */
 	protected $postParams = [];
 	/**
 	 * @var    array List of actions to be executed on the ajax request
-	 * @access protected
 	 */
 	protected $requestActions = [];
 	/**
 	 * @var    string NETopes AJAX request session data ID
-	 * @access protected
 	 */
 	protected $requestId = NULL;
 	/**
 	 * @var    string Control key for securing the request session data
-	 * @access protected
 	 */
 	protected $requestKey = '';
 	/**
 	 * @var    int Session keys case
-	 * @access protected
 	 */
 	public static $sessionKeysCase = CASE_UPPER;
 	/**
 	 * @var    string Separator for ajax request arguments
-	 * @access protected
 	 */
 	public static $requestSeparator = ']!r![';
 	/**
 	 * @var    string Separator for function arguments
-	 * @access protected
 	 */
 	public static $argumentSeparator = ']!r!a![';
 	/**
 	 * @var    string Separator for ajax actions
-	 * @access protected
 	 */
 	public static $actionSeparator = ']!r!s![';
 	/**
 	 * @var    string Parsing arguments separator
-	 * @access protected
 	 */
 	protected $paramsSeparator = ',';
 	/**
 	 * @var    string Array elements separator
-	 * @access protected
 	 */
 	protected $arrayParamsSeparator = '~';
 	/**
 	 * @var    string Array key-value separator
-	 * @access protected
 	 */
 	protected $arrayKeySeparator = '|';
     /**
      * Execute a method of the AJAX Request implementing class
-     *
      * @param  array                  $postParams Parameters to be send via post on ajax requests
      * @param  string|array           $subSession Sub-session key/path
      * @return void
-     * @access public
      * @throws \NETopes\Core\AppException
      */
 	public static function PrepareAndExecuteRequest(array $postParams = [],$subSession = NULL) {
@@ -170,10 +152,8 @@ abstract class BaseRequest {
 	}//END public static function PrepareAndExecuteRequest
     /**
      * AJAX Request constructor function
-     *
      * @param  string                 $subSession Sub-session key/path
      * @param array|null              $postParams
-     * @access public
      * @throws \NETopes\Core\AppException
      */
 	public final function __construct($subSession = NULL,?array $postParams = []) {
@@ -190,7 +170,6 @@ abstract class BaseRequest {
 	}//END public final function __construct
     /**
      * Get AJAX Request javascript initialize script
-     *
      * @param string $jsRootUrl
      * @return string
      * @throws \NETopes\Core\AppException
@@ -209,9 +188,7 @@ HTML;
 	}//END public function GetJsScripts
     /**
      * Initialize AJAX Request session data (generate session data id) if is not initialized
-     *
      * @return void
-     * @access protected
      * @throws \NETopes\Core\AppException
      */
 	protected function Init() {
@@ -226,9 +203,7 @@ HTML;
 	}//END protected function Init
     /**
      * Clear ARequest session data and re-initialize it
-     *
      * @return void
-     * @access protected
      * @throws \NETopes\Core\AppException
      */
 	protected function ClearState() {
@@ -238,7 +213,6 @@ HTML;
 		$this->Init();
 	}//END protected function ClearState
     /**
-     *
      * @throws \NETopes\Core\AppException
      */
 	protected function StartSecureHttp() {
@@ -250,7 +224,6 @@ HTML;
 		}//if(!strlen($this->requestKey))
 	}//END protected function StartSecureHttp
     /**
-     *
      * @throws \NETopes\Core\AppException
      */
 	protected function ClearSecureHttp() {
@@ -259,10 +232,8 @@ HTML;
 	}//END protected function ClearSecureHttp
 	/**
 	 * Sets params to be send via post on the ajax request
-	 *
 	 * @param  array $params Key-value array of parameters to be send via post
 	 * @return void
-	 * @access public
 	 */
 	public function SetPostParams($params) {
 		if(is_array($params) && count($params)) { $this->postParams = $params; }
@@ -275,10 +246,8 @@ HTML;
 	}//END public function HasActions
     /**
      * Sets params to be send via post on the ajax request
-     *
      * @param string $targetId
      * @return bool
-     * @access public
      */
 	public function SetDynamicTarget(string $targetId): bool {
 		if(!strlen(trim($targetId))) { return FALSE; }
@@ -336,11 +305,9 @@ HTML;
 	}//END public function ExecuteRequest
 	/**
 	 * Generate command parameters string for AjaxRequest request
-	 *
 	 * @param      $val
 	 * @param null $key
 	 * @return string
-	 * @access public
 	 */
 	public function GetCommandParameters($val,$key = NULL) {
 		$result = '';
@@ -365,10 +332,8 @@ HTML;
 	}//END public function GetCommandParameters
 	/**
 	 * Generate commands string for AjaxRequest request
-	 *
 	 * @param array $params
 	 * @return string
-	 * @access public
 	 */
 	public function GetCommands($params = NULL) {
 		if(!is_array($params) || !count($params)) { return NULL; }
@@ -395,7 +360,6 @@ HTML;
     /**
      * Generate javascript for ajax request
      * $js_script -> js script or js file name (with full link) to be executed before or after the ajax request
-     *
      * @param      $commands
      * @param int  $loader
      * @param null $confirm
@@ -409,7 +373,6 @@ HTML;
      * @param null $callback
      * @return string
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function Prepare($commands,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL,$interval = NULL,$callback = NULL) {
 		$paramsEncrypt = AppConfig::GetValue('app_params_encrypt');
@@ -495,7 +458,6 @@ HTML;
     /**
      * Generate javascript call for ajax request (with callback)
      * $js_script -> js script or js file name (with full link) to be executed before or after the ajax request
-     *
      * @param      $commands
      * @param      $callback
      * @param int  $loader
@@ -508,14 +470,12 @@ HTML;
      * @param null $className
      * @return string
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function PrepareWithCallback($commands,$callback,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
 		return $this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,NULL,$callback);
 	}//END public function PrepareWithCallback
     /**
      * Generate javascript call for repeated ajax request
-     *
      * @param        $interval
      * @param        $commands
      * @param int    $loader
@@ -528,14 +488,12 @@ HTML;
      * @param null   $className
      * @return string
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function PrepareRepeated($interval,$commands,$loader = 1,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$confirm = NULL,$postParams = NULL,$classFile = NULL,$className = NULL) {
 		return $this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,$interval,NULL);
 	}//END public function PrepareRepeated
     /**
      * Adds a new paf run action to the queue
-     *
      * @param      $commands
      * @param int  $loader
      * @param null $confirm
@@ -547,14 +505,12 @@ HTML;
      * @param null $className
      * @return void
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function Execute($commands,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
 		$this->AddAction($this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,NULL,NULL));
 	}//END public function Execute
     /**
      * Adds a new paf run action to the queue (with callback)
-     *
      * @param      $commands
      * @param      $callback
      * @param int  $loader
@@ -567,14 +523,12 @@ HTML;
      * @param null $className
      * @return void
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function ExecuteWithCallback($commands,$callback,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
 		$this->AddAction($this->Prepare($commands,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,NULL,$callback));
 	}//END public function ExecuteWithCallback
     /**
      * Generate and execute javascript for AjaxRequest request
-     *
      * @param array $params Parameters object (instance of [Params])
      * @param int   $loader
      * @param null  $confirm
@@ -586,14 +540,12 @@ HTML;
      * @param null  $className
      * @return void
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function ExecuteAjaxRequest($params = [],$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL) {
 		$this->AddAction($this->PrepareAjaxRequest($params,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className));
 	}//END public function ExecuteAjaxRequest
     /**
      * Generate javascript for AjaxRequest request
-     *
      * @param array $params Parameters object (instance of [Params])
      * @param null  $callback
      * @param int   $loader
@@ -607,14 +559,12 @@ HTML;
      * @param null  $interval
      * @return string
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function PrepareAjaxRequestWithCallback($params = [],$callback = NULL,$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL,$interval = NULL) {
 		return $this->PrepareAjaxRequest($params,$loader,$confirm,$jsScript,$async,$runOnInitEvent,$postParams,$classFile,$className,$interval,$callback);
 	}//END public function PrepareAjaxRequestWithCallback
     /**
      * Generate javascript for AjaxRequest request
-     *
      * @param array $params Parameters object (instance of [Params])
      * @param int   $loader
      * @param null  $confirm
@@ -628,7 +578,6 @@ HTML;
      * @param null  $callback
      * @return string
      * @throws \NETopes\Core\AppException
-     * @access public
      */
 	public function PrepareAjaxRequest($params = [],$loader = 1,$confirm = NULL,$jsScript = NULL,$async = 1,$runOnInitEvent = 1,$postParams = NULL,$classFile = NULL,$className = NULL,$interval = NULL,$callback = NULL) {
 		if(!is_array($params) || !count($params)) { return NULL; }
@@ -721,7 +670,6 @@ HTML;
 	}//END private function PrepareConfirm
 	/**
 	 * Transforms the post params array into a string to be posted by the javascript method
-	 *
 	 * @param  array  $params An array of parameters to be sent with the request
 	 * @return string The post params as a string
 	 * @access private
@@ -753,7 +701,6 @@ HTML;
 /*** NETopes js response functions ***/
 	/**
 	 * Execute javascript code
-	 *
 	 * @param $jsScript
 	 */
 	public function ExecuteJs($jsScript) {
@@ -761,7 +708,6 @@ HTML;
 	}//END public function ExecuteJs
 	/**
 	 * Redirect the browser to a URL
-	 *
 	 * @param $url
 	 */
 	public function Redirect($url) {
@@ -775,7 +721,6 @@ HTML;
 	}//END public function Refresh
 	/**
 	 * Display a javascript alert
-	 *
 	 * @param $text
 	 */
 	public function Alert($text) {
@@ -783,7 +728,6 @@ HTML;
 	}//END public function Alert
 	/**
 	 * Submit a form on the page
-	 *
 	 * @param $form
 	 */
 	public function Submit($form) {
@@ -791,11 +735,9 @@ HTML;
 	}//END public function Submit
 	/**
 	 * Used for placing complex/long text into an element (text or html)
-	 *
 	 * @param  string $content The content to be inserted in the element
 	 * @param  string $target The id of the element
 	 * @return void
-	 * @access public
 	 */
 	public function InnerHtml($content,$target) {
 		$action = '';
@@ -813,40 +755,32 @@ HTML;
 	}//END public function InnerHtml
 	/**
 	 * Hides an element (sets css display property to none)
-	 *
 	 * @param  string $element Id of element to be hidden
 	 * @return void
-	 * @access public
 	 */
 	public function Hide($element) {
 		$this->AddAction("ARequest.put('none','{$element}','r','style.display')");
 	}//END public function Hide
 	/**
 	 * Shows an element (sets css display property to '')
-	 *
 	 * @param  string $element Id of element to be shown
 	 * @return void
-	 * @access public
 	 */
 	public function Show($element) {
 		$this->AddAction("ARequest.put('','{$element}','r','style.display')");
 	}//END public function Show
 	/**
 	 * Set style for an element
-	 *
 	 * @param  string $element Id of element to be set
 	 * @param  string $styleString Style to be set
 	 * @return void
-	 * @access public
 	 */
 	public function Style($element,$styleString) {
 		$this->AddAction("ARequest.setStyle('{$element}','{$styleString}')");
 	}//END public function Style
 	/**
 	 * Return response actions to javascript for execution and clears actions property
-	 *
 	 * @return string The string enumeration containing all actions to be executed
-	 * @access public
 	 */
 	public function Send() {
 		$actions = $this->GetActions();
@@ -909,7 +843,6 @@ HTML;
 	/**
      * String explode function based on standard php explode function.
      * After exploding the string, for each non-numeric element, all leading and trailing spaces will be trimmed.
-     *
      * @param   string $separator The string used as separator.
      * @param   string $string The string to be exploded.
      * @return  array The exploded and trimmed string as array.
@@ -919,7 +852,6 @@ HTML;
     }//END public static function TrimExplode
     /**
      * Check if a string contains one or more strings.
-     *
      * @param   string $haystack The string to be searched.
      * @param   mixed $needle The string to be searched for.
      * To search for multiple strings, needle can be an array containing this strings.

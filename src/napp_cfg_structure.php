@@ -1,9 +1,7 @@
 <?php
 /**
  * NETopes AJAX configuration structure file
- *
  * Here are all the configuration elements definition for NETopes AJAX
- *
  * @package    NETopes\Ajax
  * @author     George Benjamin-Schonberger
  * @copyright  Copyright (c) 2013 - 2019 AdeoTEK Software SRL
