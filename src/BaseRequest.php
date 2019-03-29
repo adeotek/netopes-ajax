@@ -13,6 +13,7 @@
 namespace NETopes\Ajax;
 use ErrorHandler;
 use kcfinder\fastImage;
+use NETopes\Core\App\ModulesProvider;
 use NETopes\Core\AppConfig;
 use NETopes\Core\AppException;
 use NETopes\Core\AppSession;
@@ -75,7 +76,11 @@ abstract class BaseRequest {
     /**
      * @var    string Javascript getter method marker
      */
-    public static $jsGetterMarker='js:';
+    public static $jsGetterMarker='nGet|';
+    /**
+     * @var    string Javascript eval marker
+     */
+    public static $jsEvalMarker='nEval|';
 
     /**
      * String explode function based on standard php explode function.
@@ -95,7 +100,7 @@ abstract class BaseRequest {
      * @param bool              $escapeQuotes
      * @return string The javascript object string representation
      */
-    public static function ConvertToJsObject($input,?string $key=NULL,bool $escapeQuotes=TRUE): string {
+    public static function ConvertToJsObject($input,?string $key=NULL,bool $escapeQuotes=FALSE): string {
         $result='';
         if(is_scalar($input)) {
             $key=$key ?: (is_string($input) && strlen($input) ? $input : '');
@@ -106,7 +111,7 @@ abstract class BaseRequest {
                 $isArray=TRUE;
             }//if($key)
             if(is_string($input)) {
-                $result.="'".addcslashes($input,"'")."'";
+                $result.='\''.addcslashes($input,'\'').'\'';
             } elseif(is_numeric($input)) {
                 $result.=$input;
             } elseif(is_bool($input)) {
@@ -124,7 +129,7 @@ abstract class BaseRequest {
         } else {
             $result='{}';
         }//if(is_scalar($input))
-        return ($escapeQuotes ? addcslashes($result,"'") : $result);
+        return ($escapeQuotes ? addcslashes($result,'\'') : $result);
     }//END public static function ConvertToJsObject
 
     /**
@@ -171,7 +176,14 @@ abstract class BaseRequest {
             $REQ=$requests[AppSession::ConvertToSessionCase($request_id,static::$sessionKeysCase)];
             $method=$REQ[AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)];
             $lkey=AppSession::ConvertToSessionCase('CLASS',static::$sessionKeysCase);
-            $class=(array_key_exists($lkey,$REQ) && $REQ[$lkey]) ? $REQ[$lkey] : AppConfig::GetValue('ajax_class_name');
+            if(array_key_exists($lkey,$REQ) && strlen($REQ[$lkey])) {
+                $isModule=(array_key_exists(AppSession::ConvertToSessionCase('IS_MODULE',static::$sessionKeysCase),$REQ) ? (bool)$REQ[AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)] : FALSE);
+                $targetClass=$REQ[$lkey];
+                $class=(is_subclass_of($targetClass,self::class) ? $targetClass : AppConfig::GetValue('ajax_class_name'));
+            } else {
+                $isModule=FALSE;
+                $class=$targetClass=AppConfig::GetValue('ajax_class_name');
+            }//if(array_key_exists($lkey,$REQ) && strlen($REQ[$lkey]))
             if(!class_exists($class)) {
                 $errors='Class ['.$class.'] not found!';
             }//if(!class_exists($class))
@@ -179,7 +191,7 @@ abstract class BaseRequest {
                 NApp::SetAjaxRequest(new $class($subSession,$postParams));
                 /* Execute the requested function */
                 try {
-                    NApp::Ajax()->ExecuteRequest($method,$php,$serializeMode);
+                    NApp::Ajax()->ExecuteRequest($targetClass,$method,$php,$serializeMode,$isModule);
                 } catch(\Error $er) {
                     NApp::Elog($er);
                     ErrorHandler::AddError($er);
@@ -534,7 +546,7 @@ HTML;
         }
         switch($cType) {
             case 'jqui':
-                $confirmStr=str_replace('"',"'",json_encode([
+                $confirmStr=str_replace('"','\'',json_encode([
                     'type'=>'jqui',
                     'message'=>rawurlencode($cTxt),
                     'title'=>get_array_value($confirm,'title','','is_string'),
@@ -542,16 +554,16 @@ HTML;
                     'cancel'=>get_array_value($confirm,'cancel','','is_string'),
                 ]));
                 if(AppConfig::GetValue('app_params_encrypt')) {
-                    $confirmStr="'".\GibberishAES::enc($confirmStr,$requestId)."'";
+                    $confirmStr='\''.\GibberishAES::enc($confirmStr,$requestId).'\'';
                 }
                 break;
             case 'js':
             default:
                 if(AppConfig::GetValue('app_params_encrypt')) {
-                    $confirmStr=str_replace('"',"'",json_encode(['type'=>'std','message'=>rawurlencode($cTxt)]));
-                    $confirmStr="'".\GibberishAES::enc($confirmStr,$requestId)."'";
+                    $confirmStr=str_replace('"','\'',json_encode(['type'=>'std','message'=>rawurlencode($cTxt)]));
+                    $confirmStr='\''.\GibberishAES::enc($confirmStr,$requestId).'\'';
                 } else {
-                    $confirmStr="'".rawurlencode($cTxt)."'";
+                    $confirmStr='\''.rawurlencode($cTxt).'\'';
                 }//if(AppConfig::GetValue('app_params_encrypt'))
                 break;
         }//END switch
@@ -564,14 +576,14 @@ HTML;
      */
     protected function ReplaceDynamicReferences(string &$params): bool {
         $dynamicParams=[];
-        preg_match_all('/{'.static::$jsGetterMarker.'{[^}]*}}/i',$params,$dynamicParams);
+        preg_match_all('/{'.addcslashes(static::$jsGetterMarker,'|').'[^}]*}/i',$params,$dynamicParams);
         $result=isset($dynamicParams[0]) && is_array($dynamicParams[0]) && count($dynamicParams[0]);
         if($result) {
             foreach($dynamicParams[0] as $dParam) {
                 if(strpos($params,$dParam)===FALSE) {
                     continue;
                 }
-                $dParamArray=explode(':',trim(str_replace('{'.static::$jsGetterMarker.'{','',$dParam),'{}'));
+                $dParamArray=explode(':',trim(str_replace('{'.static::$jsGetterMarker,'',$dParam),'{}'));
                 $dpValue="'{$dParamArray[0]}'";
                 if(count($dParamArray)>1) {
                     $dpValue.=",'{$dParamArray[1]}'";
@@ -581,6 +593,18 @@ HTML;
                 }
                 $dParamValue=$this->jsGetMethodName.'('.$dpValue.')';
                 $params=str_replace('\''.$dParam.'\'',$dParamValue,$params);
+            }//END foreach
+        }//if($result)
+        unset($dParamArray);
+        preg_match_all('/{'.addcslashes(static::$jsEvalMarker,'|').'[^}]*}/i',$params,$dynamicParams);
+        $result=$result || (isset($dynamicParams[0]) && is_array($dynamicParams[0]) && count($dynamicParams[0]));
+        if($result) {
+            foreach($dynamicParams[0] as $dParam) {
+                if(strpos($params,$dParam)===FALSE) {
+                    continue;
+                }
+                $dpValue=str_replace('\\\'','\'',trim(str_replace('{'.static::$jsEvalMarker,'',$dParam),'{}\''));
+                $params=str_replace('\''.$dParam.'\'',$dpValue,$params);
             }//END foreach
         }//if($result)
         return $result;
@@ -628,7 +652,7 @@ HTML;
         $sessionId=rawurlencode(\GibberishAES::enc(session_id(),AppConfig::GetValue('app_encryption_key')));
         $postParams=$this->PreparePostParams($postParams);
         $pConfirm=$this->PrepareConfirm($confirm,$requestId);
-        $jsCallback=strlen($callback) ? "'".($encryptParams ? \GibberishAES::enc($callback,$requestId) : $callback)."'" : 'false';
+        $jsCallback=strlen($callback) ? '\''.($encryptParams ? \GibberishAES::enc($callback,$requestId) : $callback).'\'' : 'false';
         $jiParamsString=static::ConvertToJsObject($jiParams);
         $eParamsString=static::ConvertToJsObject($eParams);
         $jsScriptsString=static::ConvertToJsObject($jsScripts);
@@ -666,7 +690,7 @@ HTML;
      * @throws \NETopes\Core\AppException
      */
     public function Prepare(string $params,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?int $interval=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
-        $params=trim($params,' {');
+        $params=trim($params,'{ ');
         if(substr($params,0,1)=='\'') {
             $params=str_replace('"',static::$doubleQuotesEscape,$params);
         } elseif(substr($params,0,1)=='"') {
@@ -675,7 +699,8 @@ HTML;
         } else {
             $params=str_replace('"',static::$doubleQuotesEscape,$params);
         }
-
+        $params=addcslashes($params,'\\');
+        $this->ReplaceDynamicReferences($params);
         $params='{ \'phash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', '.$params;
         return $this->PrepareRequestCommand($method ?? $this->defaultMethod,$params,$targetId,NULL,NULL,$loader,$confirm,$async,$callback,$jsPassTroughParams,$eParams,$interval,$triggerOnInitEvent,$postParams,$jsScripts,$class);
     }//END public function Prepare
@@ -693,7 +718,7 @@ HTML;
                 function(&$value) {
                     if(is_string($value) && strlen($value)) {
                         $value=str_replace('"',static::$doubleQuotesEscape,$value);
-                        $value=addcslashes($value,'\'');
+                        // $value=addcslashes($value,'\'');
                     }//if(is_string($value) && strlen($value))
                 }
             );
@@ -712,19 +737,26 @@ HTML;
      * @throws \NETopes\Core\AppException
      */
     public function PrepareAjaxRequest(array $params,array $extraParams=[]): ?string {
+        if(array_key_exists('array_params',$params)) {
+            $params['arrayParams']=$params['array_params'];
+            unset($params['array_params']);
+        }//if(array_key_exists('array_params',$params))
         $paramsString=$this->ProcessParamsArray($params);
-        return $this->Prepare(
+        $paramsString='{ \'phash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', '.trim($paramsString,'{ ');
+        return $this->PrepareRequestCommand(
+            get_array_value($extraParams,'method',$this->defaultMethod,'is_notempty_string'),
             $paramsString,
             get_array_value($extraParams,'target_id',NULL,'?is_string'),
-            get_array_value($extraParams,'js_pass_trough_params',NULL,'?is_array'),
+            null,
+            null,
             get_array_value($extraParams,'loader',TRUE,'bool'),
             get_array_value($extraParams,'confirm',NULL),
             get_array_value($extraParams,'async',TRUE,'bool'),
             get_array_value($extraParams,'callback',NULL,'?is_string'),
+            get_array_value($extraParams,'js_pass_trough_params',NULL,'?is_array'),
             get_array_value($extraParams,'e_params',NULL,'?is_array'),
-            get_array_value($extraParams,'trigger_on_init_event',TRUE,'bool'),
-            get_array_value($extraParams,'method',NULL,'?is_string'),
             get_array_value($extraParams,'interval',NULL,'?is_integer'),
+            get_array_value($extraParams,'trigger_on_init_event',TRUE,'bool'),
             get_array_value($extraParams,'post_params',NULL,'?is_array'),
             get_array_value($extraParams,'js_scripts',NULL,'?is_array'),
             get_array_value($extraParams,'class',NULL,'?is_string')
@@ -791,42 +823,58 @@ HTML;
     }//END public function ExecuteAjaxRequest
 
     /**
-     * @param $method
-     * @param $params
-     * @param $serializeMode
+     * @param string      $class
+     * @param string      $method
+     * @param string      $params
+     * @param string|null $serializeMode
+     * @param bool        $isModule
      * @return mixed
      * @throws \NETopes\Core\AppException
      */
-    public function ExecuteRequest($method,$params,$serializeMode) {
-        //Kill magic quotes if they are on
-        if(get_magic_quotes_gpc()) {
-            $params=stripslashes($params);
+    public function ExecuteRequest(string $class,string $method,string $params,?string $serializeMode=NULL,bool $isModule=FALSE) {
+        if(!class_exists($class)) {
+            echo "AjaxRequest ERROR: [{$class}] Not validated.";
+            return NULL;
+        }
+        if($isModule && !ModulesProvider::ModuleMethodExists($class,$method)) {
+            echo "AjaxRequest ERROR: [{$class}::{$method}] Not validated.";
+            return NULL;
+        } elseif(!$isModule && !method_exists($class,$method)) {
+            echo "AjaxRequest ERROR: [{$class}::{$method}] Not validated.";
+            return NULL;
         }
         //decode encrypted HTTP data if needed
         $params=utf8_decode(rawurldecode($params));
         if(AppConfig::GetValue('app_secure_http')) {
             if(!$this->requestKey) {
-                echo "AjaxRequest ERROR: [{$method}] Not validated.";
+                echo "AjaxRequest ERROR: [{$class}::{$method}] Not validated.";
+                return NULL;
             }
             $params=\GibberishAES::dec($params,$this->requestKey);
         }//if(AppConfig::GetValue('app_secure_http'))
-        //limited to 100 arguments for DNOS attack protection
-        NApp::Dlog($params,'ExecuteRequest::$params');
-        $params=explode(static::$argumentSeparator,$params,100);
-        for($i=0; $i<count($params); $i++) {
-            if($serializeMode=='php') {
+        if($serializeMode=='php') {
+            //limited to 100 arguments for DNOS attack protection
+            $params=explode(static::$argumentSeparator,$params,100);
+            for($i=0; $i<count($params); $i++) {
                 $params[$i]=$this->Utf8UnSerialize(rawurldecode($params[$i]));
                 $params[$i]=str_replace(static::$argumentSeparator,'',$params[$i]);
-            } else {
-                $params[$i]=json_decode(rawurldecode($params[$i]),TRUE);
-            }//if($serializeMode=='php')
-
-        }//END for
-        if(method_exists($this,$method)) {
-            return call_user_func_array([$this,$method],$params);
+            }//END for
+        } else {
+            $params=json_decode($params,TRUE);
+        }//if($serializeMode=='php')
+        if(trim($class,'\\')==trim(get_called_class(),'\\')) {
+            if($serializeMode=='php') {
+                return call_user_func_array([$this,$method],$params);
+            }
+            return $this->$method($params);
+        } elseif($isModule) {
+            return ModulesProvider::Exec($class,$method,$params);
+        }//if(trim($class,'\\')==trim(get_called_class(),'\\'))
+        $instance=new $class();
+        if($serializeMode=='php') {
+            return call_user_func_array([$instance,$method],$params);
         }
-        echo "AjaxRequest ERROR: [{$method}] Not validated.";
-        return NULL;
+        return $instance->$method($params);
     }//END public function ExecuteRequest
 
     /**
@@ -907,71 +955,51 @@ HTML;
      */
     protected $arrayKeySeparator='|';
 
-    // /**
-    //  * Generate command parameters string for AjaxRequest request
-    //  *
-    //  * @param      $val
-    //  * @param null $key
-    //  * @return string
-    //  */
-    // public function GetCommandParameters($val,$key=NULL) {
-    //     $result='';
-    //     if(is_array($val)) {
-    //         foreach($val as $k=>$v) {
-    //             if(strlen($key)) {
-    //                 $lk=$key.'['.(is_numeric($k) ? '' : $k).']';
-    //             } else {
-    //                 $lk=(is_numeric($k) ? '' : $k);
-    //             }//if(strlen($key))
-    //             $result.=(strlen($result) ? $this->arrayParamsSeparator : '');
-    //             $result.=$this->GetCommandParameters($v,$lk);
-    //         }//END foreach
-    //     } elseif(strlen($key) || strlen($val)) {
-    //         if(is_numeric($key) && is_string($val) && strpos($val,':')!==FALSE) {
-    //             $result=$val;
-    //         } else {
-    //             $result=(strlen($key) ? "'{$key}'".$this->arrayKeySeparator : '').(strpos($val,':')!==FALSE ? $val : "'{$val}'");
-    //         }//if(is_numeric($key) && is_string($val) && strpos($val,':')!==FALSE)
-    //     }//if(is_array($value) && count($value))
-    //     return $result;
-    // }//END public function GetCommandParameters
-    //
-    // /**
-    //  * Generate commands string for AjaxRequest request
-    //  *
-    //  * @param array $params
-    //  * @return string
-    //  */
-    // public function GetCommands($params=NULL) {
-    //     if(!is_array($params) || !count($params)) {
-    //         return NULL;
-    //     }
-    //     $module=get_array_value($params,'module',NULL,'is_notempty_string');
-    //     $method=get_array_value($params,'method',NULL,'is_notempty_string');
-    //     if(!$module || !$method) {
-    //         return NULL;
-    //     }
-    //     $call=get_array_value($params,'call','AjaxRequest','is_notempty_string');
-    //     $target=get_array_value($params,'target','','is_string');
-    //     $lparams=get_array_value($params,'params',[],'is_array');
-    //     $commands="{$call}('{$module}','{$method}'";
-    //     if(array_key_exists('target',$lparams)) {
-    //         $ptarget=$lparams['target'];
-    //         unset($lparams['target']);
-    //     } else {
-    //         $ptarget=NULL;
-    //     }//if(array_key_exists('target',$lparams))
-    //     $parameters=$this->GetCommandParameters($lparams);
-    //     // NApp::Dlog($parameters,'$parameters');
-    //     if(strlen($parameters)) {
-    //         $commands.=','.$parameters;
-    //     }
-    //     if(strlen($ptarget)) {
-    //         $commands.=(strlen($parameters) ? '' : ",''").",'{$ptarget}'";
-    //     }
-    //     $commands.=")".(strlen($target) ? '->'.$target : '');
-    //     return $commands;
-    // }//END public function GetCommands
+    /**
+     * Check if a string contains one or more strings.
+     *
+     * @param   string  $haystack The string to be searched.
+     * @param   mixed   $needle   The string to be searched for.
+     *                            To search for multiple strings, needle can be an array containing this strings.
+     * @param   integer $offset   The offset from which the search to begin (default 0, the begining of the string).
+     * @param   bool    $allArray Used only if the needle param is an array, sets the search type:
+     *                            * if is set TRUE the function will return TRUE only if all the strings contained in needle are found in haystack,
+     *                            * if is set FALSE (default) the function will return TRUE if any (one, several or all)
+     *                            of the strings in the needle are found in haystack.
+     * @return  bool Returns TRUE if needle is found in haystack or FALSE otherwise.
+     */
+    public static function StringContains(string $haystack,$needle,int $offset=0,bool $allArray=FALSE): bool {
+        if(is_array($needle)) {
+            if(!$haystack || count($needle)==0) {
+                return FALSE;
+            }
+            foreach($needle as $n) {
+                $tr=strpos($haystack,$n,$offset);
+                if(!$allArray && $tr!==FALSE) {
+                    return TRUE;
+                }
+                if($allArray && $tr===FALSE) {
+                    return FALSE;
+                }
+            }//foreach($needle as $n)
+            return $allArray;
+        }//if(is_array($needle))
+        return strpos($haystack,$needle,$offset)!==FALSE;
+    }//END public static function StringContains
+
+    /**
+     * @param $arg
+     * @return string
+     */
+    private function PrepareArgument($arg) {
+        if(self::StringContains($arg,':')) {
+            return '\'{'.self::$jsGetterMarker.$arg.'}\'';
+        }
+        if(trim($arg,'\'')==$arg && strpos($arg,'(')!==FALSE && strpos($arg,')')!==FALSE) {
+            return '\'{'.self::$jsEvalMarker.$arg.'}\'';
+        }
+        return $arg;
+    }//END private function PrepareArgument
 
     /**
      * Generate javascript for ajax request
@@ -992,114 +1020,82 @@ HTML;
      * @throws \NETopes\Core\AppException
      */
     public function LegacyPrepare($commands,$loader=1,$confirm=NULL,$jsScript=NULL,$async=1,$runOnInitEvent=1,$postParams=NULL,$classFile=NULL,$className=NULL,$interval=NULL,$callback=NULL) {
-        // $paramsEncrypt=AppConfig::GetValue('app_params_encrypt');
-        // $commands=static::TrimExplode(';',$commands);
-        // $allCommands='';
-        // foreach($commands as $command) {
-        //     $command=str_replace('\\','\\\\',$command);
-        //     $functions='';
-        //     $targets='';
-        //     $eParams='';
-        //     $jParams='';
-        //     if(strpos($command,'-<')!==FALSE) {
-        //         $jParams='{ ';
-        //         foreach(static::TrimExplode('-<',$command) as $k=>$v) {
-        //             switch($k) {
-        //                 case 0:
-        //                     $command=trim($v);
-        //                     break;
-        //                 case 1:
-        //                 default:
-        //                     $jParams.=($k>1 ? $this->paramsSeparator : '').trim($v).':'.trim($v);
-        //                     break;
-        //             }//END switch
-        //         }//END foreach
-        //         $jParams.=' }';
-        //     }//if(strpos($command,'-<')!==FALSE)
-        //     $tmp=static::TrimExplode('->',$command);
-        //     if(isset($tmp[0])) {
-        //         $functions=trim($tmp[0]);
-        //     }
-        //     if(isset($tmp[1])) {
-        //         $targets=trim($tmp[1]);
-        //     }
-        //     if(isset($tmp[2])) {
-        //         $eParams=trim($tmp[2]);
-        //     }
-        //     if(strstr($functions,'(')) {
-        //         $action='';
-        //         $target='';
-        //         $targetId='';
-        //         $targetProperty='';
-        //         $inputArray=explode('(',$functions,2);
-        //         list($function,$args)=$inputArray;
-        //         $args=substr($args,0,-1);
-        //         $tmp=static::TrimExplode(',',$targets);
-        //         if(isset($tmp[0])) {
-        //             $target=$tmp[0];
-        //         }
-        //         if(isset($tmp[1])) {
-        //             $action=$tmp[1];
-        //         }
-        //         $tmp=static::TrimExplode(':',$target);
-        //         if(isset($tmp[0])) {
-        //             $targetId=$tmp[0];
-        //         }
-        //         if(isset($tmp[1])) {
-        //             $targetProperty=$tmp[1];
-        //         }
-        //         if(!$action) {
-        //             $action='r';
-        //         }
-        //         if(!$targetProperty) {
-        //             $targetProperty='innerHTML';
-        //         }
-        //         if(!$targets) {
-        //             $action=$targetProperty=$targetId='';
-        //         }
-        //         if($function) {
-        //             $requestId=AppSession::GetNewUID($function.$this->requestId,'sha256',TRUE);
-        //             if($classFile || $className) {
-        //                 $classFile=strlen($classFile) ? $classFile : AppConfig::GetValue('ajax_class_file');
-        //                 $className=strlen($className) ? $className : AppConfig::GetValue('ajax_class_name');
-        //                 $reqSessionParams=[
-        //                     AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)=>$function,
-        //                     AppSession::ConvertToSessionCase('CLASS_FILE',static::$sessionKeysCase)=>$classFile,
-        //                     AppSession::ConvertToSessionCase('CLASS',static::$sessionKeysCase)=>$className,
-        //                 ];
-        //             } else {
-        //                 $reqSessionParams=[AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)=>$function];
-        //             }//if($classFile || $className || $this->customClass)
-        //             $subSession=is_array($this->subSession) ? $this->subSession : [$this->subSession];
-        //             $subSession[]=AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$sessionKeysCase);
-        //             $subSession[]=AppSession::ConvertToSessionCase('AREQUESTS',static::$sessionKeysCase);
-        //             AppSession::SetGlobalParam(AppSession::ConvertToSessionCase($requestId,static::$sessionKeysCase),$reqSessionParams,FALSE,$subSession,FALSE);
-        //             $sessionId=rawurlencode(\GibberishAES::enc(session_id(),AppConfig::GetValue('app_encryption_key')));
-        //             $postParams=$this->PreparePostParams($postParams);
-        //             $argsSeparators=[$this->paramsSeparator,$this->arrayParamsSeparator,$this->arrayKeySeparator];
-        //             $phash=AppConfig::GetValue('app_use_window_name') ? "'+NAppRequest.get(window.name)+'".static::$argumentSeparator : '';
-        //             $jsArguments=$paramsEncrypt ? \GibberishAES::enc($phash.$this->ParseArguments($args,$argsSeparators),$requestId) : $phash.$this->ParseArguments($args,$argsSeparators);
-        //             $pConfirm=$this->PrepareConfirm($confirm,$requestId);
-        //             $jsCallback=strlen($callback) ? $callback : '';
-        //             if(strlen($jsCallback) && $paramsEncrypt) {
-        //                 $jsCallback=\GibberishAES::enc($jsCallback,$requestId);
-        //             }
-        //             if(is_numeric($interval) && $interval>0) {
-        //                 $allCommands.="NAppRequest.runRepeated({$interval},'".str_replace("'","\\'",$jsArguments)."',".((int)$paramsEncrypt).",'{$targetId}','{$action}','{$targetProperty}','{$sessionId}','{$requestId}','{$postParams}',{$loader},'{$async}','{$jsScript}',{$pConfirm},".(strlen($jParams) ? $jParams : 'undefined').",".(strlen($jsCallback) ? $jsCallback : 'false').",".($runOnInitEvent==1 ? 1 : 0).','.(strlen($eParams) ? $eParams : 'undefined').");";
-        //             } else {
-        //                 $allCommands.='NAppRequest.run('."'{$jsArguments}',".((int)$paramsEncrypt).",'{$targetId}','{$action}','{$targetProperty}','{$sessionId}','{$requestId}','{$postParams}',{$loader},'{$async}','{$jsScript}',{$pConfirm},".(strlen($jParams) ? $jParams : 'undefined').",".(strlen($jsCallback) ? $jsCallback : 'false').",".($runOnInitEvent==1 ? 1 : 0).','.(strlen($eParams) ? $eParams : 'undefined').");";
-        //             }//if(is_numeric($interval) && $interval>0)
-        //         }//if($function)
-        //     }//if(strstr($functions,'('))
-        // }//foreach($commands as $command)
-
-        $params='';
-        $targetId=NULL;
-        $jsPassTroughParams=NULL;
-        $eParams=NULL;
-        $method=NULL;
-
-        return $this->Prepare($params,$targetId,$jsPassTroughParams,$loader,$confirm,$async,$callback,$eParams,$runOnInitEvent,$method,$interval,$postParams,$jsScript,$className);
+        $allCommands='';
+        $commands=static::TrimExplode(';',$commands);
+        foreach($commands as $command) {
+            $functions='';
+            $targets='';
+            $eParams='';
+            $jParams='';
+            if(strpos($command,'-<')!==FALSE) {
+                $jParams='{ ';
+                foreach(static::TrimExplode('-<',$command) as $k=>$v) {
+                    switch($k) {
+                        case 0:
+                            $command=trim($v);
+                            break;
+                        case 1:
+                        default:
+                            $jParams.=($k>1 ? $this->paramsSeparator : '').trim($v).':'.trim($v);
+                            break;
+                    }//END switch
+                }//END foreach
+                $jParams.=' }';
+            }//if(strpos($command,'-<')!==FALSE)
+            $tmp=static::TrimExplode('->',$command);
+            if(isset($tmp[0])) {
+                $functions=trim($tmp[0]);
+            }
+            if(isset($tmp[1])) {
+                $targets=trim($tmp[1]);
+            }
+            if(isset($tmp[2])) {
+                $eParams=trim($tmp[2]);
+            }
+            if(strstr($functions,'(')) {
+                $target='';
+                $targetId='';
+                $inputArray=explode('(',$functions,2);
+                list($function,$args)=$inputArray;
+                $args=substr($args,0,-1);
+                $tmp=static::TrimExplode(',',$targets);
+                if(isset($tmp[0])) {
+                    $target=$tmp[0];
+                }
+                $tmp=static::TrimExplode(':',$target);
+                if(isset($tmp[0])) {
+                    $targetId=$tmp[0];
+                }
+                if($function) {
+                    $params='';
+                    if(strlen($args)) {
+                        $pLvl1=explode($this->paramsSeparator,$args);
+                        $params.='\'module\': '.get_array_value($pLvl1,0,'','is_string').',';
+                        $params.='\'method\': '.get_array_value($pLvl1,1,'','is_string').',';
+                        $pParams=get_array_value($pLvl1,2,'','is_string');
+                        $ppPrams='';
+                        $apPrams='';
+                        foreach(explode($this->arrayParamsSeparator,$pParams) as $p) {
+                            if(strpos($p,'|')!==FALSE) {
+                                $pArray=explode('|',$p);
+                                $ppPrams.=(strlen($ppPrams) ? ', ' : '').$pArray[0].': '.$this->PrepareArgument($pArray[1]);
+                            } else {
+                                $apPrams.=(strlen($apPrams) ? ', ' : '').$this->PrepareArgument($p);
+                            }
+                        }
+                        $ppPrams.=(strlen($ppPrams) ? ', ' : '').'\'target\': '.get_array_value($pLvl1,3,'','is_string').'';
+                        $params.='\'params\': { '.$ppPrams.' }';
+                        if(strlen($apPrams)) {
+                            $params.=",\n".'\'arrayParams\': [ '.$apPrams.' ]';
+                        }
+                    }
+                    $params='{'.$params.'}';
+                    $interval=is_numeric($interval) && $interval>0 ? $interval : NULL;
+                    $allCommands.=$this->Prepare($params,$targetId,$jParams,$loader,$confirm,$async,$callback,$eParams,$runOnInitEvent,$function,$interval,$postParams,$jsScript,$className);
+                }//if($function)
+            }//if(strstr($functions,'('))
+        }//foreach($commands as $command)
+        return $allCommands;
     }//END public function LegacyPrepare
 
     /**

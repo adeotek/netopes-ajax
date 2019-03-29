@@ -192,74 +192,87 @@ const NAppRequest = {
 		if(NAppRequest.serializeMode==='php') { return NAppRequest.phpSerialize(val); }
 		return JSON.stringify(val);
 	},//END serialize
-	getToArray: function(obj,initial) {
-		if(typeof(obj)!=='object' || obj==null) { return initial; }
-		let aResult = null;
-		let val;
+	getByName: function(obj,objName) {
+		let val = null;
 		let nName = obj.nodeName.toLowerCase();
+		if(nName==='input' || nName==='select' || nName==='textarea') {
+			switch(obj.getAttribute('type')) {
+				case 'checkbox':
+					if(obj.checked===true) {
+						if(obj.value) {
+							val = NAppRequest.escapeString(obj.value.split(NAppRequest.actionSeparator).join(''));
+						} else {
+							val = 0;
+						}//if(obj.value)
+					} else {
+						val = 0;
+					}//if(obj.checked===true)
+					break;
+				case 'radio':
+					let rval = document.querySelector('input[type=radio][name='+objName+']:checked').value;
+					if(rval) {
+						val = NAppRequest.escapeString(rval.split(NAppRequest.actionSeparator).join(''));
+					} else {
+						val = 0;
+					}//if(rval)
+					break;
+				default:
+					let pafprop = obj.getAttribute('data-paf-prop');
+					if(typeof(pafprop)=='string' && pafprop.length>0) {
+						let pp_arr = pafprop.split(':');
+						if(pp_arr.length>1) {
+							val = NAppRequest.getFromObject(obj,pp_arr[0],pp_arr[1]);
+						} else {
+							val = NAppRequest.getFromObject(obj,pp_arr[0]);
+						}//if(pp_arr.length>1)
+					} else {
+						val = NAppRequest.getFromObject(obj,'value');
+					}//if(typeof(pafprop)=='string' && pafprop.length>0)
+					val = NAppRequest.escapeString(val);
+					break;
+			}//END switch
+		} else {
+			val = NAppRequest.escapeString(NAppRequest.getFromObject(obj,'content'));
+		}//if(nName=='input' || nName=='select' || nName=='textarea')
+		return val;
+	},//END getByName
+	objAssignItem: function(key,val) {
+		let lKey, lVal;
+		if(Array.isArray(key) && key.length>0) {
+			lKey = key.shift();
+			if (key.length > 0) {
+				lVal = NAppRequest.objAssignItem(key,val);
+			} else {
+				lVal = val;
+			}
+		}
+		if(lKey.length>0) {
+			let obj = {};
+			obj[lKey] = lVal;
+			return obj;
+		}
+		return [lVal];
+	},//END objAssignItem
+	getToArray: function(obj,initial) {
+		if(NAppRequest.serializeMode==='php') { return NAppRequest.getToArrayForPhp(obj,initial); }
+		if(typeof(obj)!=='object' || obj==null) { return initial; }
+		let aResult = {};
 		let objName = obj.getAttribute('name');
 		if(!objName || objName.length<=0) { objName = obj.getAttribute('data-name'); }
 		if(objName) {
+			let val = NAppRequest.getByName(obj,objName);
 			let names = objName.replace(/^[\w|\-|_]+/,"$&]").replace(/]$/,"").split("][");
-			if(nName==='input' || nName==='select' || nName==='textarea') {
-				switch(obj.getAttribute('type')) {
-					case 'checkbox':
-						if(obj.checked===true) {
-							if(obj.value) {
-								val = NAppRequest.escapeString(obj.value.split(NAppRequest.actionSeparator).join(''));
-							} else {
-								val = 0;
-							}//if(obj.value)
-						} else {
-							val = 0;
-						}//if(obj.checked===true)
-						break;
-					case 'radio':
-						let rval = document.querySelector('input[type=radio][name='+objName+']:checked').value;
-						if(rval) {
-							val = NAppRequest.escapeString(rval.split(NAppRequest.actionSeparator).join(''));
-						} else {
-							val = 0;
-						}//if(rval)
-						break;
-					default:
-						let pafprop = obj.getAttribute('data-paf-prop');
-						if(typeof(pafprop)=='string' && pafprop.length>0) {
-							let pp_arr = pafprop.split(':');
-							if(pp_arr.length>1) {
-								val = NAppRequest.getFromObject(obj,pp_arr[0],pp_arr[1]);
-							} else {
-								val = NAppRequest.getFromObject(obj,pp_arr[0]);
-							}//if(pp_arr.length>1)
-						} else {
-							val = NAppRequest.getFromObject(obj,'value');
-						}//if(typeof(pafprop)=='string' && pafprop.length>0)
-						val = NAppRequest.escapeString(val);
-						break;
-				}//END switch
-			} else {
-				val = NAppRequest.escapeString(NAppRequest.getFromObject(obj,'content'));
-			}//if(nName=='input' || nName=='select' || nName=='textarea')
 		    if(names.length>0) {
-		    	for(let i=names.length-1;i>=0;i--) {
-		    		let tmp;
-		    		if(names[i]!=='') {
-			    		tmp = {};
-			    		tmp['#k#_'+names[i]] = (i===(names.length-1) ? val : aResult);
-			    	} else {
-			    		tmp = [ (i===(names.length-1) ? val : aResult) ];
-			    	}//if(names[i]!='')
-			    	aResult = tmp;
-		    	}//END for
+		    	aResult = NAppRequest.objAssignItem(names,val);
 		    } else {
-		    	aResult = [ val ];
+		    	aResult[objName] = val;
 		    }//if(names.length>0)
 		}//if(objName)
-		if(typeof(initial)!='object' && !Array.isArray(initial)) { return aResult; }
+		if(typeof(initial)!='object') { return aResult; }
 	    return arrayMerge(initial,aResult,true);
 	},//END getToArray
 	getFormContent: function(id) {
-		let result = '';
+		let result = {};
 		let frm = document.getElementById(id);
 		let rbElements = {};
 		if(typeof(frm)=='object') {
@@ -300,7 +313,10 @@ const NAppRequest = {
 				result = NAppRequest.escapeString(val);
 			}//if(typeof(val)!='string')
 		}//if(!property)
-		return NAppRequest.serialize(result);
+		if(NAppRequest.serializeMode==='php') {
+			return NAppRequest.serialize(result);
+		}
+		return result;
 	},//END get
 	put: function(content,targetId,action,property) {
 		if(!targetId) return;
@@ -352,7 +368,7 @@ const NAppRequest = {
 		let req = new XMLHttpRequest();
 		let lAsync = typeof(async)!=='undefined' ? ((!(async===0 || async===false || async==='0'))) : true;
 		req.open('POST',NAPP_TARGET,lAsync);
-		req.setRequestHeader('Content-type','application/json;charset=UTF-8');
+		req.setRequestHeader('Content-type','application/x-www-form-urlencoded;charset=UTF-8');
 		req.send(content);
 		req.onreadystatechange = function() {
 			if(req.readyState===4) {
@@ -480,6 +496,32 @@ const NAppRequest = {
 			NAppRequest.timerExecute(interval,lTimer,execData);
 		}//if(interval && interval>0)
 	},//END executeRepeated
+	getToArrayForPhp: function(obj,initial) {
+		if(typeof(obj)!=='object' || obj==null) { return initial; }
+		let aResult = null;
+		let objName = obj.getAttribute('name');
+		if(!objName || objName.length<=0) { objName = obj.getAttribute('data-name'); }
+		if(objName) {
+			let names = objName.replace(/^[\w|\-|_]+/,"$&]").replace(/]$/,"").split("][");
+			let val = NAppRequest.getByName(obj,objName);
+		    if(names.length>0) {
+		    	for(let i=names.length-1;i>=0;i--) {
+		    		let tmp;
+		    		if(names[i]!=='') {
+			    		tmp = {};
+			    		tmp['#k#_'+names[i]] = (i===(names.length-1) ? val : aResult);
+			    	} else {
+			    		tmp = [ (i===(names.length-1) ? val : aResult) ];
+			    	}//if(names[i]!='')
+			    	aResult = tmp;
+		    	}//END for
+		    } else {
+		    	aResult = [ val ];
+		    }//if(names.length>0)
+		}//if(objName)
+		if(typeof(initial)!='object') { return aResult; }
+	    return arrayMerge(initial,aResult,true);
+	},//END getToArrayForPhp
 	phpSerialize: function(mixed_value) {
 		let val,key,okey,
 	    ktype = '',

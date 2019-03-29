@@ -24,39 +24,45 @@ use NApp;
  * @package  NETopes\Ajax
  */
 class Request extends BaseRequest {
+
     /**
      * Generic ajax call
      *
-     * @param        $windowName
-     * @param        $module
-     * @param        $method
-     * @param string $params
-     * @param string $target
-     * @param int    $nonCustom
-     * @param int    $resetSessionParams
+     * @param array|string|null $params
      * @return mixed
-     * @throws \Exception
      */
-    public function AjaxRequest($windowName,$module,$method,$params=NULL,$target=NULL,$nonCustom=0,$resetSessionParams=0) {
+    public function AjaxRequest(?array $params) {
+        $windowName=get_array_value($params,'phash',NULL,'?is_string');
+        $module=get_array_value($params,'module','','is_string');
+        $method=get_array_value($params,'method','','is_string');
+        $target=get_array_value($params,'targetId',NULL,'?is_string');
+        $nonCustom=get_array_value($params,'non_custom',0,'is_integer');
+        $resetSessionParams=get_array_value($params,'reset_session_params',0,'is_integer');
         if(!strlen($windowName)) {
             $this->ExecuteJs("window.name = '".NApp::GetPhash()."'");
         }
         $result=NULL;
         try {
-            $olduserid=NApp::GetPageParam(NApp::GetUserIdKey());
-            $userid=NApp::GetParam(NApp::GetUserIdKey());
-            if($olduserid && $userid!=$olduserid) {
-                NApp::SetPageParam(NApp::GetUserIdKey(),$userid);
+            $oldUserId=NApp::GetPageParam(NApp::GetUserIdKey());
+            $userId=NApp::GetParam(NApp::GetUserIdKey());
+            if($oldUserId && $userId!=$oldUserId) {
+                NApp::SetPageParam(NApp::GetUserIdKey(),$userId);
                 $this->ExecuteJs("window.location.href = '".NApp::GetAppBaseUrl()."';");
-            }//if($olduserid && $userid!=$olduserid)
-            NApp::SetPageParam(NApp::GetUserIdKey(),$userid);
-            $o_params=new Params($params);
-            $o_params->set('target',$target);
-            $o_params->set('phash',$windowName);
+            }//if($oldUserId && $userId!=$oldUserId)
+            NApp::SetPageParam(NApp::GetUserIdKey(),$userId);
+            $pParams=get_array_value($params,'params',[],'is_array');
+            if(array_key_exists('arrayParams',$params) && ($aParams=get_array_value($params,'arrayParams',[],'is_array'))) {
+                foreach($aParams as $aParam) {
+                    $pParams=array_merge($pParams,$aParam);
+                }//END foreach
+            }//if(array_key_exists('arrayParams',$params) && ($aParams=get_array_value($params,'arrayParams',[],'is_array')))
+            $oParams=new Params($pParams);
+            $oParams->set('target',$target);
+            $oParams->set('phash',$windowName);
             if($nonCustom) {
-                $result=ModulesProvider::ExecNonCustom($module,$method,$o_params,NULL,(bool)$resetSessionParams);
+                $result=ModulesProvider::ExecNonCustom($module,$method,$oParams,NULL,(bool)$resetSessionParams);
             } else {
-                $result=ModulesProvider::Exec($module,$method,$o_params,NULL,(bool)$resetSessionParams);
+                $result=ModulesProvider::Exec($module,$method,$oParams,NULL,(bool)$resetSessionParams);
             }//if($nonCustom)
             if(strlen(AppConfig::GetValue('app_arequest_js_callback'))) {
                 $this->ExecuteJs(AppConfig::GetValue('app_arequest_js_callback'));
@@ -74,16 +80,15 @@ class Request extends BaseRequest {
     /**
      * Generic ajax call for controls
      *
-     * @param        $windowName
-     * @param        $controlHash
-     * @param        $method
-     * @param string $params
-     * @param string $control
-     * @param int    $viaPost
+     * @param array|null $params
      * @return void
-     * @throws \Exception
      */
-    public function ControlAjaxRequest($windowName,$controlHash,$method,$params=NULL,$control=NULL,$viaPost=0) {
+    public function ControlAjaxRequest(?array $params) {
+        $windowName=get_array_value($params,'phash',NULL,'?is_string');
+        $controlHash=get_array_value($params,'control_hash','','is_string');
+        $method=get_array_value($params,'method','','is_string');
+        $control=get_array_value($params,'control',NULL,'?is_string');
+        $viaPost=get_array_value($params,'via_post',0,'is_integer');
         if(!strlen($windowName)) {
             $this->ExecuteJs("window.name = '".NApp::GetPhash()."'");
         }
@@ -99,18 +104,18 @@ class Request extends BaseRequest {
             }//if($olduserid && $userid!=$olduserid)
             NApp::SetPageParam(NApp::GetUserIdKey(),$userid);
             if($viaPost) {
-                $lcontrol=strlen($control) ? unserialize(GibberishAES::dec($control,$controlHash)) : NULL;
+                $lControl=strlen($control) ? unserialize(GibberishAES::dec($control,$controlHash)) : NULL;
             } else {
-                $lcontrol=NApp::GetPageParam($controlHash);
-                $lcontrol=strlen($lcontrol)>0 ? unserialize($lcontrol) : NULL;
+                $lControl=NApp::GetPageParam($controlHash);
+                $lControl=strlen($lControl) ? unserialize($lControl) : NULL;
             }//if($viaPost)
-            if(!is_object($lcontrol) || !method_exists($lcontrol,$method)) {
+            if(!is_object($lControl) || !method_exists($lControl,$method)) {
                 throw new AppException('Invalid class or method',E_ERROR,1);
             }
-            $o_params=new Params($params);
-            $o_params->set('output',TRUE);
-            $o_params->set('phash',$windowName);
-            $lcontrol->$method($o_params);
+            $oParams=new Params(get_array_value($params,'params',[],'is_array'));
+            $oParams->set('output',TRUE);
+            $oParams->set('phash',$windowName);
+            $lControl->$method($oParams);
         } catch(\Error $e) {
             \ErrorHandler::AddError($e);
         } catch(AppException $ae) {
@@ -121,11 +126,12 @@ class Request extends BaseRequest {
     /**
      * Ajax call to set language
      *
-     * @param $selectedLang
+     * @param array|null $params
      * @return void
      * @throws \NETopes\Core\AppException
      */
-    public function SetLanguage(string $selectedLang) {
+    public function SetLanguage(?array $params) {
+        $selectedLang=get_array_value($params,'selected_lang','','is_string');
         $alang=explode('^',$selectedLang);
         $old_lang=NApp::GetLanguageCode();
         NApp::SetPageParam('language_code',$alang[1]);
