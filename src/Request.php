@@ -11,6 +11,8 @@
  * @filesource
  */
 namespace NETopes\Ajax;
+use Error;
+use ErrorHandler;
 use NETopes\Core\App\ModulesProvider;
 use NETopes\Core\App\Params;
 use NETopes\Core\AppConfig;
@@ -67,12 +69,12 @@ class Request extends BaseRequest {
             if(strlen(AppConfig::GetValue('app_arequest_js_callback'))) {
                 $this->ExecuteJs(AppConfig::GetValue('app_arequest_js_callback'));
             }
-        } catch(\Error $e) {
+        } catch(Error $e) {
             $result=NULL;
-            \ErrorHandler::AddError($e);
+            ErrorHandler::AddError($e);
         } catch(AppException $ae) {
             $result=NULL;
-            \ErrorHandler::AddError($ae);
+            ErrorHandler::AddError($ae);
         }//END try
         return $result;
     }//END public function AjaxRequest
@@ -116,10 +118,10 @@ class Request extends BaseRequest {
             $oParams->set('output',TRUE);
             $oParams->set('phash',$windowName);
             $lControl->$method($oParams);
-        } catch(\Error $e) {
-            \ErrorHandler::AddError($e);
+        } catch(Error $e) {
+            ErrorHandler::AddError($e);
         } catch(AppException $ae) {
-            \ErrorHandler::AddError($ae);
+            ErrorHandler::AddError($ae);
         }//END try
     }//END public function ControlAjaxRequest
 
