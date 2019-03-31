@@ -650,7 +650,7 @@ HTML;
      * @return string|null
      * @throws \NETopes\Core\AppException
      */
-    protected function PrepareRequestCommand(string $method,string $params,?string $targetId=NULL,?string $action=NULL,?string $property=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$jiParams=NULL,$eParams=NULL,?int $interval=NULL,$triggerOnInitEvent=TRUE,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
+    public function PrepareRequestCommand(string $method,string $params,?string $targetId=NULL,?string $action=NULL,?string $property=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$jiParams=NULL,$eParams=NULL,?int $interval=NULL,$triggerOnInitEvent=TRUE,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
         if(!strlen($method)) {
             return NULL;
         }
@@ -687,7 +687,51 @@ HTML;
             $command="NAppRequest.execute('".($targetId ?? '')."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestId}',{$jsScriptsString},undefined);";
         }//if(isset($interval) &&$interval>0)
         return $command;
-    }//END protected function PrepareRequestCommand
+    }//END public function PrepareRequestCommand
+
+    /**
+     * @param string|null $params
+     * @return string|null
+     */
+    public function ProcessParamsString(?string $params): ?string {
+        $params=trim($params,'{ ');
+        if(substr($params,0,1)=='\'') {
+            $params=str_replace('"',static::$doubleQuotesEscape,$params);
+        } elseif(substr($params,0,1)=='"') {
+            $params=addcslashes($params,'\'');
+            $params=str_replace('"','\'',$params);
+        } else {
+            $params=str_replace('"',static::$doubleQuotesEscape,$params);
+        }
+        $params=addcslashes($params,'\\');
+        return $params;
+    }//END public function ProcessParamsString
+
+    /**
+     * @param array|null $params
+     * @return mixed
+     */
+    public function ProcessParamsArray(?array $params): ?string {
+        if(is_null($params)) {
+            $params=[];
+        } else {
+            if(array_key_exists('array_params',$params)) {
+                $params['arrayParams']=$params['array_params'];
+                unset($params['array_params']);
+            }//if(array_key_exists('array_params',$params))
+            array_walk_recursive(
+                $params,
+                function(&$value) {
+                    if(is_string($value) && strlen($value)) {
+                        $value=str_replace('"',static::$doubleQuotesEscape,$value);
+                        // $value=addcslashes($value,'\'');
+                    }//if(is_string($value) && strlen($value))
+                }
+            );
+        }
+        $result=str_replace('"','\'',json_encode($params));
+        return $result;
+    }//END public function ProcessParamsArray
 
     /**
      * Generate javascript for ajax request
@@ -710,43 +754,11 @@ HTML;
      * @throws \NETopes\Core\AppException
      */
     public function Prepare(string $params,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?int $interval=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
-        $params=trim($params,'{ ');
-        if(substr($params,0,1)=='\'') {
-            $params=str_replace('"',static::$doubleQuotesEscape,$params);
-        } elseif(substr($params,0,1)=='"') {
-            $params=addcslashes($params,'\'');
-            $params=str_replace('"','\'',$params);
-        } else {
-            $params=str_replace('"',static::$doubleQuotesEscape,$params);
-        }
-        $params=addcslashes($params,'\\');
+        $params=$this->ProcessParamsString($params);
         $this->ReplaceDynamicReferences($params);
         $params='{ \'phash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', '.$params;
         return $this->PrepareRequestCommand($method ?? $this->defaultMethod,$params,$targetId,NULL,NULL,$loader,$confirm,$async,$callback,$jsPassTroughParams,$eParams,$interval,$triggerOnInitEvent,$postParams,$jsScripts,$class);
     }//END public function Prepare
-
-    /**
-     * @param array|null $params
-     * @return mixed
-     */
-    public function ProcessParamsArray(?array $params) {
-        if(is_null($params)) {
-            $params=[];
-        } else {
-            array_walk_recursive(
-                $params,
-                function(&$value) {
-                    if(is_string($value) && strlen($value)) {
-                        $value=str_replace('"',static::$doubleQuotesEscape,$value);
-                        // $value=addcslashes($value,'\'');
-                    }//if(is_string($value) && strlen($value))
-                }
-            );
-        }
-        $result=str_replace('"','\'',json_encode($params));
-        $this->ReplaceDynamicReferences($result);
-        return $result;
-    }//END public function ProcessParamsArray
 
     /**
      * Generate javascript for AjaxRequest request
@@ -757,12 +769,9 @@ HTML;
      * @throws \NETopes\Core\AppException
      */
     public function PrepareAjaxRequest(array $params,array $extraParams=[]): ?string {
-        if(array_key_exists('array_params',$params)) {
-            $params['arrayParams']=$params['array_params'];
-            unset($params['array_params']);
-        }//if(array_key_exists('array_params',$params))
         $paramsString=$this->ProcessParamsArray($params);
-        $paramsString='{ \'phash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', '.trim($paramsString,'{ ');
+        $this->ReplaceDynamicReferences($result);
+        $result='{ \'phash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', '.trim($result,'{ ');
         return $this->PrepareRequestCommand(
             get_array_value($extraParams,'method',$this->defaultMethod,'is_notempty_string'),
             $paramsString,
@@ -1022,6 +1031,91 @@ HTML;
     }//END private function PrepareArgument
 
     /**
+     * @param string|null $command
+     * @param string|null $targetId
+     * @param array|null  $jParams
+     * @param string|null $eParams
+     * @param string|null $method
+     * @return string|null
+     */
+    public function LegacyProcessParamsString(?string $command,?string &$targetId=NULL,?array &$jParams=NULL,?string &$eParams=NULL,?string &$method=NULL): ?string {
+        $params=NULL;
+        if(!strlen($command)) {
+            return $params;
+        }
+        $functions='';
+        $targets='';
+        if(strpos($command,'-<')!==FALSE) {
+            foreach(static::TrimExplode('-<',$command) as $k=>$v) {
+                switch($k) {
+                    case 0:
+                        $command=trim($v);
+                        break;
+                    case 1:
+                    default:
+                        if(strlen(trim($v))) {
+                            if(!is_array($jParams)) {
+                                $jParams=[];
+                            }
+                            $jParams[trim($v)]=trim($v);
+                        }
+                        break;
+                }//END switch
+            }//END foreach
+        }//if(strpos($command,'-<')!==FALSE)
+        $tmp=static::TrimExplode('->',$command);
+        if(isset($tmp[0])) {
+            $functions=trim($tmp[0]);
+        }
+        if(isset($tmp[1])) {
+            $targets=trim($tmp[1]);
+        }
+        if(isset($tmp[2])) {
+            $eParams=strlen(trim($tmp[2])) ? trim($tmp[2]) : NULL;
+        }
+        if(strstr($functions,'(')) {
+            $target='';
+            $inputArray=explode('(',$functions,2);
+            list($method,$args)=$inputArray;
+            $args=substr($args,0,-1);
+            $tmp=static::TrimExplode(',',$targets);
+            if(isset($tmp[0])) {
+                $target=$tmp[0];
+            }
+            $tmp=static::TrimExplode(':',$target);
+            if(isset($tmp[0])) {
+                $targetId=$tmp[0];
+            }
+            if($method) {
+                $params='';
+                if(strlen($args)) {
+                    $pLvl1=explode($this->paramsSeparator,$args);
+                    $params.='\'module\': '.get_array_value($pLvl1,0,'','is_string').',';
+                    $params.='\'method\': '.get_array_value($pLvl1,1,'','is_string').',';
+                    $pParams=get_array_value($pLvl1,2,'','is_string');
+                    $ppPrams='';
+                    $apPrams='';
+                    foreach(explode($this->arrayParamsSeparator,$pParams) as $p) {
+                        if(strpos($p,'|')!==FALSE) {
+                            $pArray=explode('|',$p);
+                            $ppPrams.=(strlen($ppPrams) ? ', ' : '').$pArray[0].': '.$this->PrepareArgument($pArray[1]);
+                        } else {
+                            $apPrams.=(strlen($apPrams) ? ', ' : '').$this->PrepareArgument($p);
+                        }
+                    }
+                    $ppPrams.=(strlen($ppPrams) ? ', ' : '').'\'target\': '.get_array_value($pLvl1,3,'\'\'','is_string').'';
+                    $params.='\'params\': { '.$ppPrams.' }';
+                    if(strlen($apPrams)) {
+                        $params.=",\n".'\'arrayParams\': [ '.$apPrams.' ]';
+                    }
+                }
+                $params='{'.$params.'}';
+            }//if($method)
+        }//if(strstr($functions,'('))
+        return $params;
+    }//END public function ProcessParamsString
+
+    /**
      * Generate javascript for ajax request
      * $js_script -> js script or js file name (with full link) to be executed before or after the ajax request
      *
@@ -1043,78 +1137,14 @@ HTML;
         $allCommands='';
         $commands=static::TrimExplode(';',$commands);
         foreach($commands as $command) {
-            $functions='';
-            $targets='';
             $eParams=NULL;
-            $jParams=[];
-            if(strpos($command,'-<')!==FALSE) {
-                foreach(static::TrimExplode('-<',$command) as $k=>$v) {
-                    switch($k) {
-                        case 0:
-                            $command=trim($v);
-                            break;
-                        case 1:
-                        default:
-                            if(strlen(trim($v))) {
-                                $jParams[trim($v)]=trim($v);
-                            }
-                            break;
-                    }//END switch
-                }//END foreach
-            }//if(strpos($command,'-<')!==FALSE)
-            $tmp=static::TrimExplode('->',$command);
-            if(isset($tmp[0])) {
-                $functions=trim($tmp[0]);
-            }
-            if(isset($tmp[1])) {
-                $targets=trim($tmp[1]);
-            }
-            if(isset($tmp[2])) {
-                $eParams=strlen(trim($tmp[2])) ? trim($tmp[2]) : NULL;
-            }
-            if(strstr($functions,'(')) {
-                $target='';
-                $targetId='';
-                $inputArray=explode('(',$functions,2);
-                list($function,$args)=$inputArray;
-                $args=substr($args,0,-1);
-                $tmp=static::TrimExplode(',',$targets);
-                if(isset($tmp[0])) {
-                    $target=$tmp[0];
-                }
-                $tmp=static::TrimExplode(':',$target);
-                if(isset($tmp[0])) {
-                    $targetId=$tmp[0];
-                }
-                if($function) {
-                    $params='';
-                    if(strlen($args)) {
-                        $pLvl1=explode($this->paramsSeparator,$args);
-                        $params.='\'module\': '.get_array_value($pLvl1,0,'','is_string').',';
-                        $params.='\'method\': '.get_array_value($pLvl1,1,'','is_string').',';
-                        $pParams=get_array_value($pLvl1,2,'','is_string');
-                        $ppPrams='';
-                        $apPrams='';
-                        foreach(explode($this->arrayParamsSeparator,$pParams) as $p) {
-                            if(strpos($p,'|')!==FALSE) {
-                                $pArray=explode('|',$p);
-                                $ppPrams.=(strlen($ppPrams) ? ', ' : '').$pArray[0].': '.$this->PrepareArgument($pArray[1]);
-                            } else {
-                                $apPrams.=(strlen($apPrams) ? ', ' : '').$this->PrepareArgument($p);
-                            }
-                        }
-                        $ppPrams.=(strlen($ppPrams) ? ', ' : '').'\'target\': '.get_array_value($pLvl1,3,'\'\'','is_string').'';
-                        $params.='\'params\': { '.$ppPrams.' }';
-                        if(strlen($apPrams)) {
-                            $params.=",\n".'\'arrayParams\': [ '.$apPrams.' ]';
-                        }
-                    }
-                    $params='{'.$params.'}';
-                    $interval=is_numeric($interval) && $interval>0 ? $interval : NULL;
-                    $jsScript=is_array($jsScript) ?: NULL;
-                    $allCommands.=$this->Prepare($params,$targetId,$jParams,$loader,$confirm,$async,$callback,$eParams,$runOnInitEvent,$function,$interval,$postParams,$jsScript,$className);
-                }//if($function)
-            }//if(strstr($functions,'('))
+            $jParams=NULL;
+            $params=$this->LegacyProcessParamsString($command,$targetId,$jParams,$eParams,$method);
+            if(strlen($params)) {
+                $interval=is_numeric($interval) && $interval>0 ? $interval : NULL;
+                $jsScript=is_array($jsScript) ?: NULL;
+                $allCommands.=$this->Prepare($params,$targetId,$jParams,$loader,$confirm,$async,$callback,$eParams,$runOnInitEvent,$method,$interval,$postParams,$jsScript,$className);
+            }//if(strlen($params))
         }//foreach($commands as $command)
         return $allCommands;
     }//END public function LegacyPrepare
