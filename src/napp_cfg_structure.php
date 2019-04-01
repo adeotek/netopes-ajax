@@ -10,9 +10,11 @@
  * @version    1.2.0.0
  * @filesource
  */
-if(!defined('_VALID_NAPP_REQ') || _VALID_NAPP_REQ!==TRUE) { die('Invalid request!'); }
-$_NAPP_AJAX_CONFIG_STRUCTURE = [
-//START AJAX configuration
+if(!defined('_VALID_NAPP_REQ') || _VALID_NAPP_REQ!==TRUE) {
+    die('Invalid request!');
+}
+$_NAPP_AJAX_CONFIG_STRUCTURE=[
+    //START AJAX configuration
     // Use NETopes AJAX extension
     'app_use_ajax_extension'=>['access'=>'readonly','default'=>TRUE,'validation'=>'bool'],
     // Target file for NETopes AJAX post (relative path from public folder + name)
@@ -33,5 +35,5 @@ $_NAPP_AJAX_CONFIG_STRUCTURE = [
     'app_mod_rewrite'=>['access'=>'readonly','default'=>TRUE,'validation'=>'bool'],
     // Window name auto usage on/off
     'app_use_window_name'=>['access'=>'readonly','default'=>TRUE,'validation'=>'bool'],
-//END AJAX configuration
+    //END AJAX configuration
 ];

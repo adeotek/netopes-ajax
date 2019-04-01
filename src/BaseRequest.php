@@ -89,8 +89,8 @@ abstract class BaseRequest {
      * String explode function based on standard php explode function.
      * After exploding the string, for each non-numeric element, all leading and trailing spaces will be trimmed.
      *
-     * @param   string $separator The string used as separator.
-     * @param   string $string    The string to be exploded.
+     * @param string $separator The string used as separator.
+     * @param string $string    The string to be exploded.
      * @return  array The exploded and trimmed string as array.
      */
     public static function TrimExplode(string $separator,string $string): array {
@@ -155,8 +155,8 @@ abstract class BaseRequest {
     /**
      * Execute a method of the AJAX Request implementing class
      *
-     * @param  array        $postParams Parameters to be send via post on ajax requests
-     * @param  string|array $subSession Sub-session key/path
+     * @param array        $postParams Parameters to be send via post on ajax requests
+     * @param string|array $subSession Sub-session key/path
      * @return void
      * @throws \NETopes\Core\AppException
      */
@@ -241,7 +241,7 @@ abstract class BaseRequest {
     /**
      * AJAX Request constructor function
      *
-     * @param  string    $subSession Sub-session key/path
+     * @param string     $subSession Sub-session key/path
      * @param array|null $postParams
      * @throws \NETopes\Core\AppException
      */
@@ -363,7 +363,7 @@ HTML;
     /**
      * Sets params to be send via post on the ajax request
      *
-     * @param  array $params Key-value array of parameters to be send via post
+     * @param array $params Key-value array of parameters to be send via post
      * @return void
      */
     public function SetPostParams(array $params) {
@@ -457,8 +457,8 @@ HTML;
     /**
      * Used for placing complex/long text into an element (text or html)
      *
-     * @param  string $content The content to be inserted in the element
-     * @param  string $target  The id of the element
+     * @param string $content The content to be inserted in the element
+     * @param string $target  The id of the element
      * @return void
      */
     public function InnerHtml($content,$target) {
@@ -487,7 +487,7 @@ HTML;
     /**
      * Hides an element (sets css display property to none)
      *
-     * @param  string $element Id of element to be hidden
+     * @param string $element Id of element to be hidden
      * @return void
      */
     public function Hide($element) {
@@ -497,7 +497,7 @@ HTML;
     /**
      * Shows an element (sets css display property to '')
      *
-     * @param  string $element Id of element to be shown
+     * @param string $element Id of element to be shown
      * @return void
      */
     public function Show($element) {
@@ -507,8 +507,8 @@ HTML;
     /**
      * Set style for an element
      *
-     * @param  string $element     Id of element to be set
-     * @param  string $styleString Style to be set
+     * @param string $element     Id of element to be set
+     * @param string $styleString Style to be set
      * @return void
      */
     public function Style($element,$styleString) {
@@ -529,7 +529,7 @@ HTML;
     /**
      * Transforms the post params array into a string to be posted by the javascript method
      *
-     * @param  array|null $params An array of parameters to be sent with the request
+     * @param array|null $params An array of parameters to be sent with the request
      * @return string The post params as a string
      */
     protected function PreparePostParams(?array $params=NULL): string {
@@ -987,11 +987,11 @@ HTML;
     /**
      * Check if a string contains one or more strings.
      *
-     * @param   string  $haystack The string to be searched.
-     * @param   mixed   $needle   The string to be searched for.
+     * @param string  $haystack   The string to be searched.
+     * @param mixed   $needle     The string to be searched for.
      *                            To search for multiple strings, needle can be an array containing this strings.
-     * @param   integer $offset   The offset from which the search to begin (default 0, the begining of the string).
-     * @param   bool    $allArray Used only if the needle param is an array, sets the search type:
+     * @param integer $offset     The offset from which the search to begin (default 0, the begining of the string).
+     * @param bool    $allArray   Used only if the needle param is an array, sets the search type:
      *                            * if is set TRUE the function will return TRUE only if all the strings contained in needle are found in haystack,
      *                            * if is set FALSE (default) the function will return TRUE if any (one, several or all)
      *                            of the strings in the needle are found in haystack.
