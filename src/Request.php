@@ -34,7 +34,7 @@ class Request extends BaseRequest {
      * @return mixed
      */
     public function AjaxRequest(?array $params) {
-        $windowName=get_array_value($params,'phash',NULL,'?is_string');
+        $windowName=get_array_value($params,'pHash',NULL,'?is_string');
         $module=get_array_value($params,'module','','is_string');
         $method=get_array_value($params,'method','','is_string');
         $target=get_array_value($params,'targetId',NULL,'?is_string');
@@ -59,8 +59,10 @@ class Request extends BaseRequest {
                 }//END foreach
             }//if(array_key_exists('arrayParams',$params) && ($aParams=get_array_value($params,'arrayParams',[],'is_array')))
             $oParams=new Params($pParams);
-            $oParams->set('target',$target);
             $oParams->set('phash',$windowName);
+            if(!$oParams->containsKey('target')) {
+                $oParams->set('target',$target);
+            }
             if($nonCustom) {
                 $result=ModulesProvider::ExecNonCustom($module,$method,$oParams,NULL,(bool)$resetSessionParams);
             } else {

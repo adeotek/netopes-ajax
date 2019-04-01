@@ -591,46 +591,6 @@ HTML;
     }//END protected function PrepareConfirm
 
     /**
-     * @param string $params
-     * @return bool
-     */
-    protected function ReplaceDynamicReferences(string &$params): bool {
-        $dynamicParams=[];
-        preg_match_all('/{'.addcslashes(static::$jsGetterMarker,'|').'[^}]*}/i',$params,$dynamicParams);
-        $result=isset($dynamicParams[0]) && is_array($dynamicParams[0]) && count($dynamicParams[0]);
-        if($result) {
-            foreach($dynamicParams[0] as $dParam) {
-                if(strpos($params,$dParam)===FALSE) {
-                    continue;
-                }
-                $dParamArray=explode(':',trim(str_replace('{'.static::$jsGetterMarker,'',$dParam),'{}'));
-                $dpValue='\''.trim($dParamArray[0]).'\'';
-                if(count($dParamArray)>1) {
-                    $dpValue.=',\''.trim($dParamArray[1]).'\'';
-                }
-                if(count($dParamArray)>2) {
-                    $dpValue.=',\''.trim($dParamArray[2]).'\'';
-                }
-                $dParamValue=$this->jsGetMethodName.'('.$dpValue.')';
-                $params=str_replace('\''.$dParam.'\'',$dParamValue,$params);
-            }//END foreach
-        }//if($result)
-        unset($dParamArray);
-        preg_match_all('/{'.addcslashes(static::$jsEvalMarker,'|').'[^}]*}/i',$params,$dynamicParams);
-        $result=$result || (isset($dynamicParams[0]) && is_array($dynamicParams[0]) && count($dynamicParams[0]));
-        if($result) {
-            foreach($dynamicParams[0] as $dParam) {
-                if(strpos($params,$dParam)===FALSE) {
-                    continue;
-                }
-                $dpValue=str_replace('\\\'','\'',trim(str_replace('{'.static::$jsEvalMarker,'',$dParam),'{}\''));
-                $params=str_replace('\''.$dParam.'\'',$dpValue,$params);
-            }//END foreach
-        }//if($result)
-        return $result;
-    }//END protected function ReplaceDynamicReferences
-
-    /**
      * @param string            $method
      * @param string            $params
      * @param string|null       $targetId
@@ -691,10 +651,52 @@ HTML;
 
     /**
      * @param string|null $params
+     * @return bool
+     */
+    protected function ReplaceDynamicReferences(?string &$params): bool {
+        if(is_null($params)) {
+            return FALSE;
+        }
+        $dynamicParams=[];
+        preg_match_all('/{'.addcslashes(static::$jsGetterMarker,'|').'[^}]*}/i',$params,$dynamicParams);
+        $result=isset($dynamicParams[0]) && is_array($dynamicParams[0]) && count($dynamicParams[0]);
+        if($result) {
+            foreach($dynamicParams[0] as $dParam) {
+                if(strpos($params,$dParam)===FALSE) {
+                    continue;
+                }
+                $dParamArray=explode(':',trim(str_replace('{'.static::$jsGetterMarker,'',$dParam),'{}'));
+                $dpValue='\''.trim($dParamArray[0]).'\'';
+                if(count($dParamArray)>1) {
+                    $dpValue.=',\''.trim($dParamArray[1]).'\'';
+                }
+                if(count($dParamArray)>2) {
+                    $dpValue.=',\''.trim($dParamArray[2]).'\'';
+                }
+                $dParamValue=$this->jsGetMethodName.'('.$dpValue.')';
+                $params=str_replace('\''.$dParam.'\'',$dParamValue,$params);
+            }//END foreach
+        }//if($result)
+        unset($dParamArray);
+        preg_match_all('/{'.addcslashes(static::$jsEvalMarker,'|').'[^}]*}/i',$params,$dynamicParams);
+        $result=$result || (isset($dynamicParams[0]) && is_array($dynamicParams[0]) && count($dynamicParams[0]));
+        if($result) {
+            foreach($dynamicParams[0] as $dParam) {
+                if(strpos($params,$dParam)===FALSE) {
+                    continue;
+                }
+                $dpValue=str_replace('\\\'','\'',trim(str_replace('{'.static::$jsEvalMarker,'',$dParam),'{}\''));
+                $params=str_replace('\''.$dParam.'\'',$dpValue,$params);
+            }//END foreach
+        }//if($result)
+        return $result;
+    }//END protected function ReplaceDynamicReferences
+
+    /**
+     * @param string|null $params
      * @return string|null
      */
-    public function ProcessParamsString(?string $params): ?string {
-        $params=trim($params,'{ ');
+    protected function ProcessParamsString(?string $params): ?string {
         if(substr($params,0,1)=='\'') {
             $params=str_replace('"',static::$doubleQuotesEscape,$params);
         } elseif(substr($params,0,1)=='"') {
@@ -705,33 +707,40 @@ HTML;
         }
         $params=addcslashes($params,'\\');
         return $params;
-    }//END public function ProcessParamsString
+    }//END protected function ProcessParamsString
 
     /**
      * @param array|null $params
-     * @return mixed
+     * @return string|null
      */
-    public function ProcessParamsArray(?array $params): ?string {
+    protected function ProcessParamsArray(?array $params): ?string {
         if(is_null($params)) {
-            $params=[];
-        } else {
-            if(array_key_exists('array_params',$params)) {
-                $params['arrayParams']=$params['array_params'];
-                unset($params['array_params']);
-            }//if(array_key_exists('array_params',$params))
-            array_walk_recursive(
-                $params,
-                function(&$value) {
-                    if(is_string($value) && strlen($value)) {
-                        $value=str_replace('"',static::$doubleQuotesEscape,$value);
-                        // $value=addcslashes($value,'\'');
-                    }//if(is_string($value) && strlen($value))
-                }
-            );
+            return NULL;
         }
+        if(array_key_exists('array_params',$params)) {
+            $params['arrayParams']=$params['array_params'];
+            unset($params['array_params']);
+        }//if(array_key_exists('array_params',$params))
+        array_walk_recursive(
+            $params,
+            function(&$value) {
+                if(is_string($value) && strlen($value)) {
+                    $value=str_replace('"',static::$doubleQuotesEscape,$value);
+                    // $value=addcslashes($value,'\'');
+                }//if(is_string($value) && strlen($value))
+            }
+        );
         $result=str_replace('"','\'',json_encode($params));
         return $result;
-    }//END public function ProcessParamsArray
+    }//END protected function ProcessParamsArray
+
+    /**
+     * @param array|null $params
+     * @return string|null
+     */
+    public function GetCommand(?array $params): ?string {
+        return $this->ProcessParamsArray($params);
+    }//END public function GetCommand
 
     /**
      * Generate javascript for ajax request
@@ -756,7 +765,7 @@ HTML;
     public function Prepare(string $params,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?int $interval=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
         $params=$this->ProcessParamsString($params);
         $this->ReplaceDynamicReferences($params);
-        $params='{ \'phash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', '.$params;
+        $params='{ \'pHash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', \'targetId\': \''.$targetId.'\', '.trim($params,'{ ');
         return $this->PrepareRequestCommand($method ?? $this->defaultMethod,$params,$targetId,NULL,NULL,$loader,$confirm,$async,$callback,$jsPassTroughParams,$eParams,$interval,$triggerOnInitEvent,$postParams,$jsScripts,$class);
     }//END public function Prepare
 
@@ -770,12 +779,13 @@ HTML;
      */
     public function PrepareAjaxRequest(array $params,array $extraParams=[]): ?string {
         $paramsString=$this->ProcessParamsArray($params);
-        $this->ReplaceDynamicReferences($result);
-        $result='{ \'phash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', '.trim($result,'{ ');
+        $this->ReplaceDynamicReferences($paramsString);
+        $targetId=get_array_value($extraParams,'target_id',NULL,'?is_string');
+        $paramsString='{ \'pHash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', \'targetId\': \''.$targetId.'\', '.trim($paramsString,'{ ');
         return $this->PrepareRequestCommand(
             get_array_value($extraParams,'method',$this->defaultMethod,'is_notempty_string'),
             $paramsString,
-            get_array_value($extraParams,'target_id',NULL,'?is_string'),
+            $targetId,
             NULL,
             NULL,
             get_array_value($extraParams,'loader',TRUE,'bool'),
@@ -1109,7 +1119,7 @@ HTML;
                         $params.=",\n".'\'arrayParams\': [ '.$apPrams.' ]';
                     }
                 }
-                $params='{'.$params.'}';
+                $params='{ '.$params.' }';
             }//if($method)
         }//if(strstr($functions,'('))
         return $params;
