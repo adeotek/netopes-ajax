@@ -2,11 +2,12 @@
 /**
  * NETopes AJAX configuration structure file
  * Here are all the configuration elements definition for NETopes AJAX
+ *
  * @package    NETopes\Ajax
  * @author     George Benjamin-Schonberger
  * @copyright  Copyright (c) 2013 - 2019 AdeoTEK Software SRL
  * @license    LICENSE.md
- * @version    1.1.0.0
+ * @version    1.2.0.0
  * @filesource
  */
 if(!defined('_VALID_NAPP_REQ') || _VALID_NAPP_REQ!==TRUE) { die('Invalid request!'); }
