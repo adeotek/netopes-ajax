@@ -1041,6 +1041,27 @@ HTML;
     }//END private function PrepareArgument
 
     /**
+     * @param string|null $params
+     * @param string|null $arrayParams
+     * @return string|null
+     */
+    public function LegacyProcessExtraParamsString(?string $params,?string &$arrayParams=NULL): ?string {
+        if(!strlen($params)) {
+            return NULL;
+        }
+        $ppPrams='';
+        foreach(explode($this->arrayParamsSeparator,$params) as $p) {
+            if(strpos($p,'|')!==FALSE) {
+                $pArray=explode('|',$p);
+                $ppPrams.=(strlen($ppPrams) ? ', ' : '').$pArray[0].': '.$this->PrepareArgument($pArray[1]);
+            } else {
+                $arrayParams.=(strlen($arrayParams) ? ', ' : '').$this->PrepareArgument($p);
+            }
+        }
+        return $ppPrams;
+    }//END public function LegacyProcessExtraParamsString
+
+    /**
      * @param string|null $command
      * @param string|null $targetId
      * @param array|null  $jParams
@@ -1103,16 +1124,8 @@ HTML;
                     $params.='\'module\': '.get_array_value($pLvl1,0,'','is_string').',';
                     $params.='\'method\': '.get_array_value($pLvl1,1,'','is_string').',';
                     $pParams=get_array_value($pLvl1,2,'','is_string');
-                    $ppPrams='';
-                    $apPrams='';
-                    foreach(explode($this->arrayParamsSeparator,$pParams) as $p) {
-                        if(strpos($p,'|')!==FALSE) {
-                            $pArray=explode('|',$p);
-                            $ppPrams.=(strlen($ppPrams) ? ', ' : '').$pArray[0].': '.$this->PrepareArgument($pArray[1]);
-                        } else {
-                            $apPrams.=(strlen($apPrams) ? ', ' : '').$this->PrepareArgument($p);
-                        }
-                    }
+                    $apPrams=NULL;
+                    $ppPrams=$this->LegacyProcessExtraParamsString($pParams,$apPrams);
                     $ppPrams.=(strlen($ppPrams) ? ', ' : '').'\'target\': '.get_array_value($pLvl1,3,'\'\'','is_string').'';
                     $params.='\'params\': { '.$ppPrams.' }';
                     if(strlen($apPrams)) {
