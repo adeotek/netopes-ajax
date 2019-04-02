@@ -632,7 +632,7 @@ HTML;
         $sessionId=rawurlencode(GibberishAES::enc(session_id(),AppConfig::GetValue('app_encryption_key')));
         $postParams=$this->PreparePostParams($postParams);
         $pConfirm=$this->PrepareConfirm($confirm,$requestId);
-        $jsCallback=strlen($callback) ? '\''.($encryptParams ? GibberishAES::enc($callback,$requestId) : $callback).'\'' : 'false';
+        $jsCallback=strlen($callback) ? ($encryptParams ? '\''.GibberishAES::enc($callback,$requestId).'\'' : $callback) : 'false';
         $jiParamsString=static::ConvertToJsObject($jiParams,NULL,TRUE);
         $eParamsString=static::ConvertToJsObject($eParams);
         $jsScriptsString=static::ConvertToJsObject($jsScripts);
