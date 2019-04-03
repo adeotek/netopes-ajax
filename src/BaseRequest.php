@@ -798,7 +798,7 @@ HTML;
             get_array_value($extraParams,'trigger_on_init_event',TRUE,'bool'),
             get_array_value($extraParams,'post_params',NULL,'?is_array'),
             get_array_value($extraParams,'js_scripts',NULL,'?is_array'),
-            get_array_value($extraParams,'class',NULL,'?is_string')
+            NULL
         );
     }//END public function PrepareAjaxRequest
 
