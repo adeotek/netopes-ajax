@@ -1143,12 +1143,12 @@ HTML;
                     $params.='\'module\': '.get_array_value($pLvl1,0,'','is_string').',';
                     $params.='\'method\': '.get_array_value($pLvl1,1,'','is_string').',';
                     $pParams=get_array_value($pLvl1,2,'','is_string');
-                    $apPrams=NULL;
-                    $ppPrams=$this->LegacyProcessExtraParamsString($pParams,$apPrams);
-                    $ppPrams.=(strlen($ppPrams) ? ', ' : '').'\'target\': '.get_array_value($pLvl1,3,'\'\'','is_string').'';
-                    $params.='\'params\': { '.$ppPrams.' }';
-                    if(strlen($apPrams)) {
-                        $params.=",\n".'\'arrayParams\': [ '.$apPrams.' ]';
+                    $apParams=NULL;
+                    $ppParams=$this->LegacyProcessExtraParamsString($pParams,$apParams);
+                    $ppParams.=(strlen($ppParams) ? ', ' : '').'\'target\': '.get_array_value($pLvl1,3,'\'\'','is_string').'';
+                    $params.='\'params\': { '.$ppParams.' }';
+                    if(strlen($apParams)) {
+                        $params.=",\n".'\'arrayParams\': [ '.$apParams.' ]';
                     }
                 }
                 $params='{ '.$params.' }';
