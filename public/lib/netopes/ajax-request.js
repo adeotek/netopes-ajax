@@ -437,8 +437,8 @@ const NAppRequest = {
 			for(let pn in jParams) { jParamsString += 'var '+pn+' = '+JSON.stringify(jParams[pn])+'; '; }
 		}//if(typeof(jParams)=='object')
 		if(typeof(params)==='string') {
-			params = eval(encrypted===1 ? GibberishAES.dec(params,requestId) : params);
-			params = eval(jParamsString+' '+params);
+			params = encrypted === 1 ? GibberishAES.dec(params, requestId) : params;
+			params = eval(jParamsString + ' (' + params + ')');
 		} else if(typeof(params)!=='object') {
 			console.log('NAppRequest error: invalid parameters!');
 			return false;
@@ -482,6 +482,28 @@ const NAppRequest = {
 		let callType = objData.callType ? objData.callType : 'executeFromString';
 		NAppRequest.execute(objData.targetId,objData.action,objData.property,sParams,objData.encrypted,objData.loader,objData.async,objData.triggerOnInitEvent,objData.confirm,objData.jParams,objData.eParam,objData.callback,objData.postParams,objData.sessionId,objData.requestId,objData.jsScripts,callType);
 	},//END executeFromString
+	executeFromObject: function (data) {
+		let objData = Object.assign({}, {
+			targetId: '',
+			action: 'r',
+			property: 'innerHTML',
+			params: '',
+			encrypted: 0,
+			loader: 1,
+			async: 1,
+			triggerOnInitEvent: 1,
+			confirm: undefined,
+			jParams: {},
+			eParam: {},
+			callback: false,
+			postParams: '',
+			sessionId: '',
+			requestId: '',
+			jsScripts: {},
+			callType: 'executeFromString',
+		}, data);
+		NAppRequest.execute(objData.targetId, objData.action, objData.property, objData.params, objData.encrypted, objData.loader, objData.async, objData.triggerOnInitEvent, objData['confirm'], objData.jParams, objData.eParam, objData['callback'], objData.postParams, objData.sessionId, objData.requestId, objData.jsScripts, objData.callType);
+	},//END executeFromObject
 	timerExecute: function(interval,timer,data) {
 		if(data && timer) {
 			NAppRequest.executeFromString(GibberishAES.dec(data,timer));

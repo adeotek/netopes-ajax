@@ -166,10 +166,10 @@ abstract class BaseRequest {
         if(!$request) {
             $errors.='Empty Request!';
         }
-        $php=NULL;
+        $params=NULL;
         $serializeMode=NULL;
         $sessionId=NULL;
-        $request_id=NULL;
+        $requestId=NULL;
         $classFile=NULL;
         $class=NULL;
         $function=NULL;
@@ -177,7 +177,7 @@ abstract class BaseRequest {
         if(!$errors) {
             $serializeMode=array_key_exists('serializemode',$_POST) ? $_POST['serializemode'] : 'json';
             /* Start session and set ID to the expected paf session */
-            list($php,$sessionId,$request_id)=explode(static::$requestSeparator,$request);
+            list($params,$sessionId,$requestId)=explode(static::$requestSeparator,$request);
             /* Validate this request */
             $spath=[
                 NApp::$currentNamespace,
@@ -187,13 +187,13 @@ abstract class BaseRequest {
             $requests=AppSession::GetGlobalParam(AppSession::ConvertToSessionCase('AREQUESTS',static::$sessionKeysCase),FALSE,$spath,FALSE);
             if(GibberishAES::dec(rawurldecode($sessionId),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests)) {
                 $errors.='Invalid Request!';
-            } elseif(!in_array(AppSession::ConvertToSessionCase($request_id,static::$sessionKeysCase),array_keys($requests))) {
+            } elseif(!in_array(AppSession::ConvertToSessionCase($requestId,static::$sessionKeysCase),array_keys($requests))) {
                 $errors.='Invalid Request Data!';
             }//if(\GibberishAES::dec(rawurldecode($sessionId),AppConfig::GetValue('app_encryption_key'))!=session_id() || !is_array($requests))
         }//if(!$errors)
         if(!$errors) {
             /* Get function name and process file */
-            $REQ=$requests[AppSession::ConvertToSessionCase($request_id,static::$sessionKeysCase)];
+            $REQ=$requests[AppSession::ConvertToSessionCase($requestId,static::$sessionKeysCase)];
             $method=$REQ[AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)];
             $lkey=AppSession::ConvertToSessionCase('CLASS',static::$sessionKeysCase);
             if(array_key_exists($lkey,$REQ) && strlen($REQ[$lkey])) {
@@ -211,7 +211,7 @@ abstract class BaseRequest {
                 NApp::SetAjaxRequest(new $class($subSession,$postParams));
                 /* Execute the requested function */
                 try {
-                    NApp::Ajax()->ExecuteRequest($targetClass,$method,$php,$serializeMode,$isModule);
+                    NApp::Ajax()->ExecuteRequest($targetClass,$method,$params,$serializeMode,$isModule);
                 } catch(Error $er) {
                     NApp::Elog($er);
                     ErrorHandler::AddError($er);
@@ -278,6 +278,38 @@ abstract class BaseRequest {
     }//END protected function Init
 
     /**
+     * @return string
+     * @throws \NETopes\Core\AppException
+     */
+    public function GetEncryptedSessionId(): string {
+        return rawurlencode(GibberishAES::enc(session_id(),AppConfig::GetValue('app_encryption_key')));
+    }//END public function GetEncryptedSessionId
+
+    /**
+     * @param string      $method
+     * @param string|null $class
+     * @return string
+     * @throws \NETopes\Core\AppException
+     */
+    public function GenerateNewRequestUid(string $method,?string $class=NULL): string {
+        $requestId=AppSession::GetNewUID($method.$this->requestId,'sha256',TRUE);
+        if(strlen($class)) {
+            $class=strlen($class) ? $class : AppConfig::GetValue('ajax_class_name');
+            $reqSessionParams=[
+                AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)=>$method,
+                AppSession::ConvertToSessionCase('CLASS',static::$sessionKeysCase)=>$class,
+            ];
+        } else {
+            $reqSessionParams=[AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)=>$method];
+        }//if(strlen($class))
+        $subSession=is_array($this->subSession) ? $this->subSession : [$this->subSession];
+        $subSession[]=AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$sessionKeysCase);
+        $subSession[]=AppSession::ConvertToSessionCase('AREQUESTS',static::$sessionKeysCase);
+        AppSession::SetGlobalParam(AppSession::ConvertToSessionCase($requestId,static::$sessionKeysCase),$reqSessionParams,FALSE,$subSession,FALSE);
+        return $requestId;
+    }//END public function GenerateNewRequestUid
+
+    /**
      * Get AJAX Request javascript initialize script
      *
      * @param string $jsRootUrl
@@ -292,7 +324,7 @@ abstract class BaseRequest {
             const NAPP_TARGET = '{$appBaseUrl}/{$ajaxTargetScript}';
             const NAPP_UID = '{$this->requestKey}';
         </script>
-        <script type="text/javascript" src="{$jsRootUrl}/ajax-request.min.js?v=1903281"></script>
+        <script type="text/javascript" src="{$jsRootUrl}/ajax-request.min.js?v=1904051"></script>
 HTML;
         return $js;
     }//END public function GetJsScripts
@@ -310,7 +342,7 @@ HTML;
         $js.="\t".'var NAPP_JS_PATH="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'";'."\n";
         $js.='</script>'."\n";
         $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/gibberish-aes.min.js?v=1411031"></script>'."\n";
-        $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1903281"></script>'."\n";
+        $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1904051"></script>'."\n";
         if(NApp::GetDebuggerState()) {
             $dbgScripts=NApp::$debugger->GetScripts();
             if(is_array($dbgScripts) && count($dbgScripts)) {
@@ -615,36 +647,23 @@ HTML;
             return NULL;
         }
         $encryptParams=AppConfig::GetValue('app_params_encrypt');
-        $requestId=AppSession::GetNewUID($method.$this->requestId,'sha256',TRUE);
-        if(strlen($class)) {
-            $class=strlen($class) ? $class : AppConfig::GetValue('ajax_class_name');
-            $reqSessionParams=[
-                AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)=>$method,
-                AppSession::ConvertToSessionCase('CLASS',static::$sessionKeysCase)=>$class,
-            ];
-        } else {
-            $reqSessionParams=[AppSession::ConvertToSessionCase('METHOD',static::$sessionKeysCase)=>$method];
-        }//if(strlen($class))
-        $subSession=is_array($this->subSession) ? $this->subSession : [$this->subSession];
-        $subSession[]=AppSession::ConvertToSessionCase('NAPP_AREQUEST',static::$sessionKeysCase);
-        $subSession[]=AppSession::ConvertToSessionCase('AREQUESTS',static::$sessionKeysCase);
-        AppSession::SetGlobalParam(AppSession::ConvertToSessionCase($requestId,static::$sessionKeysCase),$reqSessionParams,FALSE,$subSession,FALSE);
-        $sessionId=rawurlencode(GibberishAES::enc(session_id(),AppConfig::GetValue('app_encryption_key')));
+        $requestUid=$this->GenerateNewRequestUid($method,$class);
+        $sessionId=$this->GetEncryptedSessionId();
         $postParams=$this->PreparePostParams($postParams);
-        $pConfirm=$this->PrepareConfirm($confirm,$requestId);
-        $jsCallback=strlen($callback) ? ($encryptParams ? '\''.GibberishAES::enc($callback,$requestId).'\'' : $callback) : 'false';
+        $pConfirm=$this->PrepareConfirm($confirm,$requestUid);
+        $jsCallback=strlen($callback) ? ($encryptParams ? '\''.GibberishAES::enc($callback,$requestUid).'\'' : $callback) : 'false';
         $jiParamsString=static::ConvertToJsObject($jiParams,NULL,TRUE);
         $eParamsString=static::ConvertToJsObject($eParams);
         $jsScriptsString=static::ConvertToJsObject($jsScripts);
-        if($encryptParams && $requestId) {
-            $params='\''.GibberishAES::enc($params,$requestId).'\'';
+        if($encryptParams && $requestUid) {
+            $params='\''.GibberishAES::enc($params,$requestUid).'\'';
         }
         $action=strlen($action) ? $action : 'r';
         $property=isset($property) ? $property : 'innerHTML';
         if(isset($interval) && $interval>0) {
-            $command="NAppRequest.executeRepeated({$interval},'".$targetId ?? ''."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestId}',{$jsScriptsString},undefined);";
+            $command="NAppRequest.executeRepeated({$interval},'".$targetId ?? ''."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestUid}',{$jsScriptsString},undefined);";
         } else {
-            $command="NAppRequest.execute('".($targetId ?? '')."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestId}',{$jsScriptsString},undefined);";
+            $command="NAppRequest.execute('".($targetId ?? '')."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestUid}',{$jsScriptsString},undefined);";
         }//if(isset($interval) &&$interval>0)
         return $command;
     }//END public function PrepareRequestCommand
