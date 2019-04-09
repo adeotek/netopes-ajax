@@ -236,56 +236,49 @@ const NAppRequest={
         }//if(nName=='input' || nName=='select' || nName=='textarea')
         return val;
     },//END getByName
-    objAssignItem: function(key,val) {
-        let lKey,lVal;
-        if(Array.isArray(key) && key.length>0) {
-            lKey=key.shift();
-            if(key.length>0) {
-                lVal=NAppRequest.objAssignItem(key,val);
-            } else {
-                lVal=val;
-            }
-        }
-        if(lKey.length>0) {
-            let obj={};
-            obj[lKey]=lVal;
-            return obj;
-        }
-        return [lVal];
-    },//END objAssignItem
-    getToArray: function(obj,initial) {
-        if(NAppRequest.serializeMode==='php') { return NAppRequest.getToArrayForPhp(obj,initial); }
-        if(typeof (obj)!=='object' || obj==null) { return initial; }
+    getToArray: function(targetObj) {
         let aResult={};
-        let objName=obj.getAttribute('name');
-        if(!objName || objName.length<=0) { objName=obj.getAttribute('data-name'); }
-        if(objName) {
-            let val=NAppRequest.getByName(obj,objName);
-            let names=objName.replace(/^[\w|\-|_]+/,'$&]').replace(/]$/,'').split('][');
-            if(names.length>0) {
-                aResult=NAppRequest.objAssignItem(names,val);
-            } else {
-                aResult[objName]=val;
-            }//if(names.length>0)
-        }//if(objName)
-        if(typeof (initial)!='object') { return aResult; }
-        return arrayMerge(initial,aResult,true);
+        if(typeof (targetObj)!=='object' || targetObj==null) { return aResult; }
+        let targetObjName=targetObj.getAttribute('name');
+        if(!targetObjName || targetObjName.length<=0) { targetObjName=targetObj.getAttribute('data-name'); }
+        if(!targetObjName) { return aResult; }
+        let val=NAppRequest.getByName(targetObj,targetObjName);
+        let names=targetObjName.replace(/^[\w|\-|_]+/,'$&]').replace(/]$/,'').split('][');
+        if(names.length>0) {
+            let newObj=val;
+            for(let i=names.length - 1; i>=0; i--) {
+                let tmpObj=newObj;
+                if(names[i].length>0) {
+                    newObj={};
+                    newObj[names[i]]=tmpObj;
+                } else {
+                    newObj=[];
+                    newObj.push(tmpObj);
+                }
+            }//END for
+            aResult=newObj;
+        } else {
+            aResult[targetObjName]=val;
+        }//if(names.length>0)
+        return aResult;
     },//END getToArray
     getFormContent: function(id) {
         let result={};
         let frm=document.getElementById(id);
         let rbElements={};
-        if(typeof (frm)=='object') {
-            $(frm).find('.postable').each(function() {
-                if(this.nodeName.toLowerCase()==='input' && this.getAttribute('type')==='radio') {
-                    if(!rbElements.hasOwnProperty(this.getAttribute('name'))) {
-                        rbElements[this.getAttribute('name')]=1;
-                        result=NAppRequest.getToArray(this,result);
-                    }//if(!rbElements.hasOwnProperty(this.getAttribute('name')))
+        if(typeof (frm)==='object') {
+            let elements=frm.getElementsByClassName('postable');
+            for(let i=0; i<elements.length; i++) {
+                if(elements[i].nodeName.toLowerCase()==='input' && elements[i].getAttribute('type')==='radio') {
+                    if(!rbElements.hasOwnProperty(elements[i].getAttribute('name'))) { continue; }
+                    rbElements[elements[i].getAttribute('name')]=1;
+                }//if(elements[i].nodeName.toLowerCase()=='input' && elements[i].getAttribute('type')=='radio')
+                if(NAppRequest.serializeMode==='php') {
+                    result=NAppRequest.getToArrayForPhp(elements[i],result);
                 } else {
-                    result=NAppRequest.getToArray(this,result);
-                }//if(this.nodeName.toLowerCase()=='input' && this.getAttribute('type')=='radio')
-            });
+                    result=arrayMerge(result,NAppRequest.getToArray(elements[i]),true);
+                }
+            }//END for
         } else {
             console.log('Invalid form: ' + id);
         }//if(frm)
