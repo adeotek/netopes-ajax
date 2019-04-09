@@ -398,7 +398,7 @@ const NAppRequest={
             req.onreadystatechange=function() {
                 if(req.readyState===4) {
                     if(req.status===200) {
-                        aResolve(this.responseText,this.getResponseHeader('HTMLTargetId'));
+                        aResolve({responseText: this.responseText,htmlTarget: this.getResponseHeader('HTMLTargetId')});
                     } else {
                         console.log(req);
                         aReject();
@@ -407,12 +407,12 @@ const NAppRequest={
             };//req.onreadystatechange=function()
             req.send(content);
         });
-        ajaxRequest.then(function(responseText,htmlTarget) {
+        ajaxRequest.then((resolution) => {
             return new Promise((cResolve,cReject) => {
-                let actions=responseText.split(NAppRequest.actionSeparator);
+                let actions=resolution.responseText.split(NAppRequest.actionSeparator);
                 let content=actions[0] + (actions[2] ? actions[2] : '');
-                if(typeof (htmlTarget)==='string' && htmlTarget.length>0) {
-                    NAppRequest.put(content,htmlTarget,action,property);
+                if(typeof (resolution.htmlTarget)==='string' && resolution.htmlTarget.length>0) {
+                    NAppRequest.put(content,resolution.htmlTarget,action,property);
                 } else if(targetId) {
                     NAppRequest.put(content,targetId,action,property);
                 } else {
