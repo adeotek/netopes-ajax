@@ -453,11 +453,11 @@ const NAppRequest={
         }//if(triggerOnInitEvent && NAppRequest.onNAppRequestInitEvent)
         NAppRequest.updateProcOn(1,loader);
         if(sessionId===decodeURIComponent(sessionId)) { sessionId=encodeURIComponent(sessionId); }
-        let jParamsString='';
-        if(typeof (jParams)==='object') {
-            for(let pn in jParams) { jParamsString+='var ' + pn + ' = ' + JSON.stringify(jParams[pn]) + '; '; }
-        }//if(typeof(jParams)=='object')
         if(typeof (params)==='string') {
+            let jParamsString='';
+            if(typeof (jParams)==='object') {
+                for(let pn in jParams) { jParamsString+='var ' + pn + ' = ' + JSON.stringify(jParams[pn]) + '; '; }
+            }//if(typeof(jParams)=='object')
             params=encrypted===1 ? GibberishAES.dec(params,requestId) : params;
             params=eval(jParamsString + ' (' + params + ')');
         } else if(typeof (params)!=='object') {
