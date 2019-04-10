@@ -266,7 +266,7 @@ const NAppRequest={
         let result={};
         let frm=document.getElementById(id);
         let rbElements={};
-        if(typeof (frm)==='object') {
+        if(typeof (frm)==='object' && frm!==null) {
             let elements=frm.getElementsByClassName('postable');
             for(let i=0; i<elements.length; i++) {
                 if(elements[i].nodeName.toLowerCase()==='input' && elements[i].getAttribute('type')==='radio') {
