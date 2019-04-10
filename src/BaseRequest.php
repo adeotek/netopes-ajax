@@ -324,7 +324,7 @@ abstract class BaseRequest {
             const NAPP_TARGET = '{$appBaseUrl}/{$ajaxTargetScript}';
             const NAPP_UID = '{$this->requestKey}';
         </script>
-        <script type="text/javascript" src="{$jsRootUrl}/ajax-request.min.js?v=1904091"></script>
+        <script type="text/javascript" src="{$jsRootUrl}/ajax-request.min.js?v=1904111"></script>
 HTML;
         return $js;
     }//END public function GetJsScripts
@@ -342,7 +342,7 @@ HTML;
         $js.="\t".'var NAPP_JS_PATH="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'";'."\n";
         $js.='</script>'."\n";
         $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/gibberish-aes.min.js?v=1411031"></script>'."\n";
-        $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1904091"></script>'."\n";
+        $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1904111"></script>'."\n";
         if(NApp::GetDebuggerState()) {
             $dbgScripts=NApp::$debugger->GetScripts();
             if(is_array($dbgScripts) && count($dbgScripts)) {
@@ -1145,7 +1145,10 @@ HTML;
                     $pParams=get_array_value($pLvl1,2,'','is_string');
                     $apParams=NULL;
                     $ppParams=$this->LegacyProcessExtraParamsString($pParams,$apParams);
-                    $ppParams.=(strlen($ppParams) ? ', ' : '').'\'target\': '.get_array_value($pLvl1,3,'\'\'','is_string').'';
+                    $targetValue=get_array_value($pLvl1,3,'','is_string');
+                    if(strlen($targetValue)) {
+                        $ppParams.=(strlen($ppParams) ? ', ' : '').'\'target\': '.$targetValue.'';
+                    }
                     $params.='\'params\': { '.$ppParams.' }';
                     if(strlen($apParams)) {
                         $params.=",\n".'\'arrayParams\': [ '.$apParams.' ]';
