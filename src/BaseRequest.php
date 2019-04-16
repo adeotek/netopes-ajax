@@ -1187,7 +1187,7 @@ HTML;
             $params=$this->LegacyProcessParamsString($command,$targetId,$jParams,$eParams,$method);
             if(strlen($params)) {
                 $interval=is_numeric($interval) && $interval>0 ? $interval : NULL;
-                $jsScript=is_array($jsScript) ?: NULL;
+                $jsScript=is_array($jsScript) ? $jsScript : NULL;
                 $allCommands.=$this->Prepare($params,$targetId,$jParams,$loader,$confirm,$async,$callback,$eParams,$runOnInitEvent,$method,$interval,$postParams,$jsScript,$className);
             }//if(strlen($params))
         }//foreach($commands as $command)
