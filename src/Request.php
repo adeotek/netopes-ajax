@@ -60,8 +60,8 @@ class Request extends BaseRequest {
             }//if(array_key_exists('arrayParams',$params) && ($aParams=get_array_value($params,'arrayParams',[],'is_array')))
             $oParams=new Params($pParams);
             $oParams->set('phash',$windowName);
-            if(!$oParams->containsKey('target')) {
-                $oParams->set('target',$target);
+            if(!$oParams->containsKey('target_id')) {
+                $oParams->set('target_id',$target);
             }
             if($nonCustom) {
                 $result=ModulesProvider::ExecNonCustom($module,$method,$oParams,NULL,(bool)$resetSessionParams);
