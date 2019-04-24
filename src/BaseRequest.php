@@ -623,6 +623,24 @@ HTML;
     }//END protected function PrepareConfirm
 
     /**
+     * @param array|string|null $params
+     * @return string The javascript object string representation
+     */
+    public static function PrepareJsPassTroughParams($params): string {
+        if(is_array($params)) {
+            $result='';
+            foreach($params as $k=>$v) {
+                $result.=(strlen($result) ? ', ' : '').'\''.(!is_integer($k) ? $k : $v).'\': '.$v;
+            }//END foreach
+            return '{ '.$result.' }';;
+        }//if(is_array($params))
+        if(is_string($params) && strlen($params)) {
+            return '{ '.trim($params,'{}[]').' }';
+        }//if(is_string($params) && strlen($params))
+        return '{}';
+    }//END public static function PrepareJsPassTroughParams
+
+    /**
      * @param string            $method
      * @param string            $params
      * @param string|null       $targetId
@@ -652,7 +670,7 @@ HTML;
         $postParams=$this->PreparePostParams($postParams);
         $pConfirm=$this->PrepareConfirm($confirm,$requestUid);
         $jsCallback=strlen($callback) ? ($encryptParams ? '\''.GibberishAES::enc($callback,$requestUid).'\'' : $callback) : 'false';
-        $jiParamsString=static::ConvertToJsObject($jiParams,NULL,TRUE);
+        $jiParamsString=static::PrepareJsPassTroughParams($jiParams);
         $eParamsString=static::ConvertToJsObject($eParams);
         $jsScriptsString=static::ConvertToJsObject($jsScripts);
         if($encryptParams && $requestUid) {
