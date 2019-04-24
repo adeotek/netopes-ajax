@@ -165,7 +165,9 @@ abstract class BaseRequest {
         $request=array_key_exists('req',$_POST) ? $_POST['req'] : NULL;
         if(!$request) {
             $errors.='Empty Request!';
-        }
+            $errors.="\nURL: ".(isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '-');
+            $errors.="\n".print_r($_POST,1);
+        }//if(!$request)
         $params=NULL;
         $serializeMode=NULL;
         $sessionId=NULL;
