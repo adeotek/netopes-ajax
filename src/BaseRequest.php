@@ -7,7 +7,7 @@
  * @author     George Benjamin-Schonberger
  * @copyright  Copyright (c) 2013 - 2019 AdeoTEK Software SRL
  * @license    LICENSE.md
- * @version    1.2.0.0
+ * @version    1.2.1.0
  * @filesource
  */
 namespace NETopes\Ajax;
@@ -659,10 +659,11 @@ HTML;
      * @param array|null        $postParams
      * @param array|null        $jsScripts
      * @param string|null       $class
+     * @param string|null       $eventsSufix
      * @return string|null
      * @throws \NETopes\Core\AppException
      */
-    public function PrepareRequestCommand(string $method,string $params,?string $targetId=NULL,?string $action=NULL,?string $property=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$jiParams=NULL,$eParams=NULL,?int $interval=NULL,$triggerOnInitEvent=TRUE,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
+    public function PrepareRequestCommand(string $method,string $params,?string $targetId=NULL,?string $action=NULL,?string $property=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$jiParams=NULL,$eParams=NULL,?int $interval=NULL,$triggerOnInitEvent=TRUE,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL,?string $eventsSufix=NULL): ?string {
         if(!strlen($method)) {
             return NULL;
         }
@@ -683,7 +684,7 @@ HTML;
         if(isset($interval) && $interval>0) {
             $command="NAppRequest.executeRepeated({$interval},'".$targetId ?? ''."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestUid}',{$jsScriptsString},undefined);";
         } else {
-            $command="NAppRequest.execute('".($targetId ?? '')."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestUid}',{$jsScriptsString},undefined);";
+            $command="NAppRequest.execute('".($targetId ?? '')."','{$action}','{$property}',{$params},".((int)$encryptParams).",".((int)$loader).",".((int)$async).",".((int)$triggerOnInitEvent).",{$pConfirm},{$jiParamsString},{$eParamsString},{$jsCallback},'{$postParams}','{$sessionId}','{$requestUid}',{$jsScriptsString},undefined,'{$eventsSufix}');";
         }//if(isset($interval) &&$interval>0)
         return $command;
     }//END public function PrepareRequestCommand
@@ -798,14 +799,15 @@ HTML;
      * @param array|null  $postParams
      * @param array|null  $jsScripts
      * @param string|null $class
+     * @param string|null $eventsSufix
      * @return string|null
      * @throws \NETopes\Core\AppException
      */
-    public function Prepare(string $params,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?int $interval=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
+    public function Prepare(string $params,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?int $interval=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL,?string $eventsSufix=NULL): ?string {
         $params=$this->ProcessParamsString($params);
         $this->ReplaceDynamicReferences($params);
         $params='{ \'pHash\': '.(AppConfig::GetValue('app_use_window_name') ? 'window.name' : '').', \'targetId\': \''.$targetId.'\', '.trim($params,'{ ');
-        return $this->PrepareRequestCommand($method ?? $this->defaultMethod,$params,$targetId,NULL,NULL,$loader,$confirm,$async,$callback,$jsPassTroughParams,$eParams,$interval,$triggerOnInitEvent,$postParams,$jsScripts,$class);
+        return $this->PrepareRequestCommand($method ?? $this->defaultMethod,$params,$targetId,NULL,NULL,$loader,$confirm,$async,$callback,$jsPassTroughParams,$eParams,$interval,$triggerOnInitEvent,$postParams,$jsScripts,$class,$eventsSufix);
     }//END public function Prepare
 
     /**
@@ -837,7 +839,8 @@ HTML;
             get_array_value($extraParams,'trigger_on_init_event',TRUE,'bool'),
             get_array_value($extraParams,'post_params',NULL,'?is_array'),
             get_array_value($extraParams,'js_scripts',NULL,'?is_array'),
-            NULL
+            NULL,
+            get_array_value($extraParams,'events_sufix',NULL,'?is_string')
         );
     }//END public function PrepareAjaxRequest
 
@@ -866,6 +869,30 @@ HTML;
     }//END public function PrepareRepeated
 
     /**
+     * Generate javascript call for ajax request with javascript event
+     *
+     * @param string      $params
+     * @param string|null $eventsSufix
+     * @param string|null $targetId
+     * @param array|null  $jsPassTroughParams
+     * @param bool        $loader
+     * @param null        $confirm
+     * @param bool        $async
+     * @param string|null $callback
+     * @param null        $eParams
+     * @param bool        $triggerOnInitEvent
+     * @param string|null $method
+     * @param array|null  $postParams
+     * @param array|null  $jsScripts
+     * @param string|null $class
+     * @return string|null
+     * @throws \NETopes\Core\AppException
+     */
+    public function PrepareWithEvent(string $params,?string $eventsSufix=NULL,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): ?string {
+        return $this->Prepare($params,$targetId,$jsPassTroughParams,$loader,$confirm,$async,$callback,$eParams,$triggerOnInitEvent,$method,NULL,$postParams,$jsScripts,$class,$eventsSufix);
+    }//END public function PrepareWithEvent
+
+    /**
      * Adds a new paf run action to the queue
      *
      * @param string      $params
@@ -881,12 +908,37 @@ HTML;
      * @param array|null  $postParams
      * @param array|null  $jsScripts
      * @param string|null $class
+     * @param string|null $eventsSufix
      * @return void
      * @throws \NETopes\Core\AppException
      */
-    public function Execute(string $params,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): void {
-        $this->AddAction($this->Prepare($params,$targetId,$jsPassTroughParams,$loader,$confirm,$async,$callback,$eParams,$triggerOnInitEvent,$method,NULL,$postParams,$jsScripts,$class));
+    public function Execute(string $params,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL,?string $eventsSufix=NULL): void {
+        $this->AddAction($this->Prepare($params,$targetId,$jsPassTroughParams,$loader,$confirm,$async,$callback,$eParams,$triggerOnInitEvent,$method,NULL,$postParams,$jsScripts,$class,$eventsSufix));
     }//END public function Execute
+
+    /**
+     * Adds a new paf run action to the queue
+     *
+     * @param string      $params
+     * @param string|null $targetId
+     * @param array|null  $jsPassTroughParams
+     * @param bool        $loader
+     * @param null        $confirm
+     * @param bool        $async
+     * @param string|null $callback
+     * @param null        $eParams
+     * @param bool        $triggerOnInitEvent
+     * @param string|null $method
+     * @param array|null  $postParams
+     * @param array|null  $jsScripts
+     * @param string|null $class
+     * @param string|null $eventsSufix
+     * @return void
+     * @throws \NETopes\Core\AppException
+     */
+    public function ExecuteWithEvent(string $params,?string $eventsSufix=NULL,?string $targetId=NULL,$jsPassTroughParams=NULL,$loader=TRUE,$confirm=NULL,$async=TRUE,?string $callback=NULL,$eParams=NULL,$triggerOnInitEvent=TRUE,?string $method=NULL,?array $postParams=NULL,?array $jsScripts=NULL,?string $class=NULL): void {
+        $this->Execute($params,$targetId,$jsPassTroughParams,$loader,$confirm,$async,$callback,$eParams,$triggerOnInitEvent,$method,$postParams,$jsScripts,$class,$eventsSufix);
+    }//END public function ExecuteWithEvent
 
     /**
      * Generate and execute javascript for AjaxRequest request
