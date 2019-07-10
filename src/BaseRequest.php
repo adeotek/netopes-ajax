@@ -15,12 +15,11 @@ use Error;
 use ErrorHandler;
 use Exception;
 use GibberishAES;
-use kcfinder\fastImage;
+use NApp;
 use NETopes\Core\App\ModulesProvider;
 use NETopes\Core\AppConfig;
 use NETopes\Core\AppException;
 use NETopes\Core\AppSession;
-use NApp;
 
 /**
  * Class Request
