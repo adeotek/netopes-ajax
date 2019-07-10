@@ -13,12 +13,12 @@
 namespace NETopes\Ajax;
 use Error;
 use ErrorHandler;
+use GibberishAES;
+use NApp;
 use NETopes\Core\App\ModulesProvider;
 use NETopes\Core\App\Params;
 use NETopes\Core\AppConfig;
 use NETopes\Core\AppException;
-use GibberishAES;
-use NApp;
 
 /**
  * Class Request

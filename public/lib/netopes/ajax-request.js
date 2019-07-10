@@ -4,7 +4,7 @@
  * Copyright (c) 2013 - 2019 AdeoTEK Software SRL
  * License    LICENSE.md
  * @author     George Benjamin-Schonberger
- * @version    1.2.0.0
+ * @version    1.2.1.0
  */
 
 const NAppRequest={
@@ -382,7 +382,8 @@ const NAppRequest={
             }//if(loaders.length>0)
         });
     },//END loadScripts
-    sendRequest: function(targetId,action,property,content,loader,async,callback,callType,jsScripts) {
+    sendRequest: function(targetId,action,property,content,loader,async,callback,callType,jsScripts,requestEventSufix) {
+        let eventsSufix=typeof requestEventSufix=='string' && requestEventSufix.length ? '.' + requestEventSufix : '';
         let ajaxRequest=new Promise((aResolve,aReject) => {
             let req=new XMLHttpRequest();
             let lAsync=typeof (async)!=='undefined' ? ((!(async===0 || async===false || async==='0'))) : true;
@@ -409,7 +410,7 @@ const NAppRequest={
                 } else if(targetId) {
                     NAppRequest.put(content,targetId,action,property);
                 } else {
-                    let event=new CustomEvent('onNAppRequestDataReceived',{detail: content});
+                    let event=new CustomEvent('onNAppRequestDataReceived' + eventsSufix,{detail: content});
                     window.dispatchEvent(event);
                 }//if(typeof(htmlTarget)==='string' && htmlTarget.length>0)
                 if(actions[1]) {
@@ -429,7 +430,7 @@ const NAppRequest={
         }).then(function() {
             NAppRequest.updateProcOn(-1,loader);
             if(NAppRequest.onNAppRequestCompleteEvent) {
-                let event=new CustomEvent('onNAppRequestComplete',{detail: callType});
+                let event=new CustomEvent('onNAppRequestComplete' + eventsSufix,{detail: callType});
                 window.dispatchEvent(event);
             }//if(NAppRequest.onNAppRequestCompleteEvent)
             if(callback) {
@@ -446,7 +447,7 @@ const NAppRequest={
             }//if(callback)
         });
     },//END sendRequest
-    executeRequest: function(sessionId,requestId,targetId,action,property,loader,async,params,encrypted,jParams,eParam,postParams,callback,triggerOnInitEvent,callType,jsScripts) {
+    executeRequest: function(sessionId,requestId,targetId,action,property,loader,async,params,encrypted,jParams,eParam,postParams,callback,triggerOnInitEvent,callType,jsScripts,requestEventSufix) {
         if(triggerOnInitEvent && NAppRequest.onNAppRequestInitEvent) {
             let event=new CustomEvent('onNAppRequestInit',{detail: {callType: callType,target: targetId,action: action,property: property}});
             window.dispatchEvent(event);
@@ -479,12 +480,12 @@ const NAppRequest={
                 endJsScripts.push(jsScripts[i]);
                 jsScripts.splice(i,1);
             }//END for
-            NAppRequest.loadScripts(jsScripts).then(NAppRequest.sendRequest(targetId,action,property,postData,loader,async,callback,callType || 'execute',endJsScripts));
+            NAppRequest.loadScripts(jsScripts).then(NAppRequest.sendRequest(targetId,action,property,postData,loader,async,callback,callType || 'execute',endJsScripts,requestEventSufix));
         } else {
-            NAppRequest.sendRequest(targetId,action,property,postData,loader,async,callback,callType || 'execute',endJsScripts);
+            NAppRequest.sendRequest(targetId,action,property,postData,loader,async,callback,callType || 'execute',endJsScripts,requestEventSufix);
         }//if(Array.isArray(jsScripts) && jsScripts.length>0)
     },//END executeRequest
-    execute: function(targetId,action,property,params,encrypted,loader,async,triggerOnInitEvent,confirm,jParams,eParam,callback,postParams,sessionId,requestId,jsScripts,callType) {
+    execute: function(targetId,action,property,params,encrypted,loader,async,triggerOnInitEvent,confirm,jParams,eParam,callback,postParams,sessionId,requestId,jsScripts,callType,requestEventSufix) {
         if(confirm) {
             let cObj=false;
             if(encrypted===1) {
@@ -502,7 +503,7 @@ const NAppRequest={
                 }//if(cObj.type==='jqui')
             }//if(cObj && typeof(cObj)=='object')
         }//if(confirm)
-        NAppRequest.executeRequest(sessionId,requestId,targetId,action,property,loader,async,params,encrypted,jParams,eParam,postParams,callback,triggerOnInitEvent,callType,jsScripts);
+        NAppRequest.executeRequest(sessionId,requestId,targetId,action,property,loader,async,params,encrypted,jParams,eParam,postParams,callback,triggerOnInitEvent,callType,jsScripts,requestEventSufix);
     },//END execute
     executeFromString: function(data) {
         let objData={};
