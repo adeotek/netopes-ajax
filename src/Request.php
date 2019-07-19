@@ -55,6 +55,10 @@ class Request extends BaseRequest {
             $pParams=get_array_value($params,'params',[],'is_array');
             if(array_key_exists('arrayParams',$params) && ($aParams=get_array_value($params,'arrayParams',[],'is_array'))) {
                 foreach($aParams as $aParam) {
+                    if(!is_array($aParam)) {
+                        NApp::Elog($aParam,'Invalid arrayParam');
+                        continue;
+                    }//if(!is_array($aParam))
                     $pParams=array_merge($pParams,$aParam);
                 }//END foreach
             }//if(array_key_exists('arrayParams',$params) && ($aParams=get_array_value($params,'arrayParams',[],'is_array')))
