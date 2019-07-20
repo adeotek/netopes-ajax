@@ -325,7 +325,7 @@ abstract class BaseRequest {
             const NAPP_TARGET = '{$appBaseUrl}/{$ajaxTargetScript}';
             const NAPP_UID = '{$this->requestKey}';
         </script>
-        <script type="text/javascript" src="{$jsRootUrl}/ajax-request.min.js?v=1904111"></script>
+        <script type="text/javascript" src="{$jsRootUrl}/ajax-request.min.js?v=1907201"></script>
 HTML;
         return $js;
     }//END public function GetJsScripts
@@ -343,7 +343,7 @@ HTML;
         $js.="\t".'var NAPP_JS_PATH="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'";'."\n";
         $js.='</script>'."\n";
         $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/gibberish-aes.min.js?v=1411031"></script>'."\n";
-        $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1904111"></script>'."\n";
+        $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1907201"></script>'."\n";
         if(NApp::GetDebuggerState()) {
             $dbgScripts=NApp::$debugger->GetScripts();
             if(is_array($dbgScripts) && count($dbgScripts)) {
