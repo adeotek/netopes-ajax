@@ -383,7 +383,7 @@ const NAppRequest={
         });
     },//END loadScripts
     sendRequest: function(targetId,action,property,content,loader,async,callback,callType,jsScripts,requestEventSufix) {
-        let eventsSufix=typeof requestEventSufix=='string' && requestEventSufix.length ? '.' + requestEventSufix : '';
+        let eventsSufix=typeof requestEventSufix=='string' && requestEventSufix.length ? '-' + requestEventSufix : '';
         let ajaxRequest=new Promise((aResolve,aReject) => {
             let req=new XMLHttpRequest();
             let lAsync=typeof (async)!=='undefined' ? ((!(async===0 || async===false || async==='0'))) : true;
