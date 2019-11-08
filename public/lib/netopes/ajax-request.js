@@ -532,8 +532,9 @@ const NAppRequest={
             requestId: '',
             jsScripts: {},
             callType: 'executeFromString',
+            requestEventSufix: null,
         },data);
-        NAppRequest.execute(objData.targetId,objData.action,objData.property,objData.params,objData.encrypted,objData.loader,objData.async,objData.triggerOnInitEvent,objData['confirm'],objData.jParams,objData.eParam,objData['callback'],objData.postParams,objData.sessionId,objData.requestId,objData.jsScripts,objData.callType);
+        NAppRequest.execute(objData.targetId,objData.action,objData.property,objData.params,objData.encrypted,objData.loader,objData.async,objData.triggerOnInitEvent,objData['confirm'],objData.jParams,objData.eParam,objData['callback'],objData.postParams,objData.sessionId,objData.requestId,objData.jsScripts,objData.callType,objData.requestEventSufix);
     },//END executeFromObject
     timerExecute: function(interval,timer,data) {
         if(data && timer) {
