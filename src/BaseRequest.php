@@ -178,7 +178,7 @@ abstract class BaseRequest {
         if(!$errors) {
             $serializeMode=array_key_exists('serializemode',$_POST) ? $_POST['serializemode'] : 'json';
             /* Start session and set ID to the expected paf session */
-            list($params,$sessionId,$requestId)=explode(static::$requestSeparator,$request);
+            [$params,$sessionId,$requestId]=explode(static::$requestSeparator,$request);
             /* Validate this request */
             $spath=[
                 NApp::$currentNamespace,
@@ -633,7 +633,7 @@ HTML;
             foreach($params as $k=>$v) {
                 $result.=(strlen($result) ? ', ' : '').'\''.(!is_integer($k) ? $k : $v).'\': '.$v;
             }//END foreach
-            return '{ '.$result.' }';;
+            return '{ '.$result.' }';
         }//if(is_array($params))
         if(is_string($params) && strlen($params)) {
             return '{ '.trim($params,'{}[]').' }';
@@ -750,9 +750,10 @@ HTML;
 
     /**
      * @param array|null $params
+     * @param bool       $doNotEscape
      * @return string|null
      */
-    protected function ProcessParamsArray(?array $params): ?string {
+    protected function ProcessParamsArray(?array $params,bool $doNotEscape=FALSE): ?string {
         if(is_null($params)) {
             return NULL;
         }
@@ -770,15 +771,19 @@ HTML;
             }
         );
         $result=str_replace('"','\'',json_encode($params));
+        if($doNotEscape) {
+            $result=str_replace('\\\\','\\',$result);
+        }
         return $result;
     }//END protected function ProcessParamsArray
 
     /**
      * @param array|null $params
+     * @param bool       $doNotEscape
      * @return string|null
      */
-    public function GetCommand(?array $params): ?string {
-        return $this->ProcessParamsArray($params);
+    public function GetCommand(?array $params,bool $doNotEscape=FALSE): ?string {
+        return $this->ProcessParamsArray($params,$doNotEscape);
     }//END public function GetCommand
 
     /**
@@ -1197,7 +1202,7 @@ HTML;
         if(strstr($functions,'(')) {
             $target='';
             $inputArray=explode('(',$functions,2);
-            list($method,$args)=$inputArray;
+            [$method,$args]=$inputArray;
             $args=substr($args,0,-1);
             $tmp=static::TrimExplode(',',$targets);
             if(isset($tmp[0])) {
