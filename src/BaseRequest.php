@@ -438,7 +438,10 @@ HTML;
         if(!$this->HasActions()) {
             return NULL;
         }
-        $actions=implode(';',array_map(function($value) { return trim($value,';'); },$this->requestActions)).';';
+        $actions=implode(';',array_map(function($value) { return trim($value,';'); },$this->requestActions));
+        if(!preg_match('//',str_replace("\n",' ',$actions))) {
+            $actions.=';';
+        }
         return static::$actionSeparator.$actions.static::$actionSeparator;
     }//END public function GetActions
     /*** NETopes js response functions ***/
