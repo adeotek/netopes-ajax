@@ -344,14 +344,14 @@ HTML;
         $js.='</script>'."\n";
         $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/gibberish-aes.min.js?v=1411031"></script>'."\n";
         $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1911081"></script>'."\n";
-        if(NApp::GetDebuggerState()) {
-            $dbgScripts=NApp::$debugger->GetScripts();
+        if(NApp::GetLoggerState()) {
+            $dbgScripts=NApp::$logger->GetScripts();
             if(is_array($dbgScripts) && count($dbgScripts)) {
                 foreach($dbgScripts as $dsk=>$ds) {
                     $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/debug'.$ds.'?v=1712011"></script>'."\n";
                 }//END foreach
             }//if(is_array($dbgScripts) && count($dbgScripts))
-        }//if(NApp::GetDebuggerState())
+        }//if(NApp::GetLoggerState())
         if($withOutput===TRUE) {
             echo $js;
         }
