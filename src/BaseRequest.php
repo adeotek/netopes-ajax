@@ -20,6 +20,7 @@ use NETopes\Core\App\ModulesProvider;
 use NETopes\Core\AppConfig;
 use NETopes\Core\AppException;
 use NETopes\Core\AppSession;
+use NETopes\Core\Logging\LogEvent;
 
 /**
  * Class Request
@@ -233,7 +234,7 @@ abstract class BaseRequest {
             }//if(!$errors)
             echo $content;
         } else {
-            NApp::Log2File(['type'=>'error','message'=>$errors,'no'=>-1,'file'=>__FILE__,'line'=>__LINE__],NApp::$appPath.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('errors_log_file'));
+            NApp::Log2File(['level'=>LogEvent::LEVEL_ERROR,'message'=>$errors,'file'=>__FILE__,'line'=>__LINE__],NApp::$appPath.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('log_file'),__FILE__,__LINE__);
             // vprint($errors);
             echo static::$actionSeparator.'window.location.href = "'.NApp::GetAppBaseUrl().'";';
         }//if(!$errors)
