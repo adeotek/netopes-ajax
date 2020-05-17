@@ -234,7 +234,7 @@ abstract class BaseRequest {
             }//if(!$errors)
             echo $content;
         } else {
-            NApp::Log2File(['level'=>LogEvent::LEVEL_ERROR,'message'=>$errors,'file'=>__FILE__,'line'=>__LINE__],NApp::$appPath.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('log_file'),__FILE__,__LINE__);
+            NApp::Log2File(['level'=>LogEvent::LEVEL_ERROR,'message'=>$errors,'file'=>__FILE__,'line'=>__LINE__],AppConfig::GetLogFile());
             // vprint($errors);
             echo static::$actionSeparator.'window.location.href = "'.NApp::GetAppBaseUrl().'";';
         }//if(!$errors)
