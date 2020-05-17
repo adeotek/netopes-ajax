@@ -20,6 +20,7 @@ use NETopes\Core\App\ModulesProvider;
 use NETopes\Core\AppConfig;
 use NETopes\Core\AppException;
 use NETopes\Core\AppSession;
+use NETopes\Core\Logging\LogEvent;
 
 /**
  * Class Request
@@ -233,7 +234,7 @@ abstract class BaseRequest {
             }//if(!$errors)
             echo $content;
         } else {
-            NApp::Log2File(['type'=>'error','message'=>$errors,'no'=>-1,'file'=>__FILE__,'line'=>__LINE__],NApp::$appPath.AppConfig::GetValue('logs_path').'/'.AppConfig::GetValue('errors_log_file'));
+            NApp::Log2File(['level'=>LogEvent::LEVEL_ERROR,'message'=>$errors,'file'=>__FILE__,'line'=>__LINE__],AppConfig::GetLogFile());
             // vprint($errors);
             echo static::$actionSeparator.'window.location.href = "'.NApp::GetAppBaseUrl().'";';
         }//if(!$errors)
@@ -344,14 +345,14 @@ HTML;
         $js.='</script>'."\n";
         $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/gibberish-aes.min.js?v=1411031"></script>'."\n";
         $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/ajax-request.min.js?v=1911081"></script>'."\n";
-        if(NApp::GetDebuggerState()) {
-            $dbgScripts=NApp::$debugger->GetScripts();
+        if(NApp::GetLoggerState()) {
+            $dbgScripts=NApp::$logger->GetScripts();
             if(is_array($dbgScripts) && count($dbgScripts)) {
                 foreach($dbgScripts as $dsk=>$ds) {
                     $js.='<script type="text/javascript" src="'.NApp::$appBaseUrl.AppConfig::GetValue('app_js_path').'/debug'.$ds.'?v=1712011"></script>'."\n";
                 }//END foreach
             }//if(is_array($dbgScripts) && count($dbgScripts))
-        }//if(NApp::GetDebuggerState())
+        }//if(NApp::GetLoggerState())
         if($withOutput===TRUE) {
             echo $js;
         }
