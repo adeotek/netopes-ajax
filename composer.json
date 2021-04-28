@@ -21,9 +21,9 @@
 	],
 	"minimum-stability": "stable",
     "require": {
-      "php": ">=7.2",
+      "php": "^7.2 || ^8.0",
       "ext-json": "*",
-      "netopes/core": "^3.4"
+      "netopes/core": "^3.5"
     },
     "autoload": {
         "psr-4": {
