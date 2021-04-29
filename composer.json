@@ -1,33 +1,29 @@
 {
-    "name": "netopes/ajax",
-    "description": "NETopes Framework AJAX extension",
-    "type": "library",
-    "license": "MIT License",
-    "authors": [
-        {
-            "name": "George Benjamin-Schonberger",
-            "email": "george.benjamin@gmail.com"
-        }
-    ],
-    "repositories": [
-		{
-		  	"type": "git",
-		  	"url": "https://github.com/adeotek/gibberish-aes-php.git"
-		},
-		{
-			"type":"git",
-			"url": "https://github.com/adeotek/netopes-core.git"
-		}
-	],
-	"minimum-stability": "stable",
-    "require": {
-      "php": ">=7.2",
-      "ext-json": "*",
-      "netopes/core": "^3.4"
-    },
-    "autoload": {
-        "psr-4": {
-            "NETopes\\Ajax\\": "src"
-        }
+  "name": "netopes/ajax",
+  "description": "NETopes Framework AJAX extension",
+  "type": "library",
+  "license": "MIT License",
+  "authors": [
+    {
+      "name": "George Benjamin-Schonberger",
+      "email": "george.benjamin@gmail.com"
     }
+  ],
+  "repositories": [
+    {
+      "type": "git",
+      "url": "https://github.com/adeotek/netopes-core.git"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": "^7.2 || ^8.0",
+    "ext-json": "*",
+    "netopes/core": "^3.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "NETopes\\Ajax\\": "src"
+    }
+  }
 }
