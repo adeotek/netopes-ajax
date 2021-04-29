@@ -11,10 +11,6 @@
     ],
     "repositories": [
 		{
-		  	"type": "git",
-		  	"url": "https://github.com/adeotek/gibberish-aes-php.git"
-		},
-		{
 			"type":"git",
 			"url": "https://github.com/adeotek/netopes-core.git"
 		}
