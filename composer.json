@@ -2,17 +2,11 @@
   "name": "netopes/ajax",
   "description": "NETopes Framework AJAX extension",
   "type": "library",
-  "license": "MIT License",
+  "license": "MIT",
   "authors": [
     {
       "name": "George Benjamin-Schonberger",
       "email": "george.benjamin@gmail.com"
-    }
-  ],
-  "repositories": [
-    {
-      "type": "git",
-      "url": "https://github.com/adeotek/netopes-core.git"
     }
   ],
   "minimum-stability": "stable",
